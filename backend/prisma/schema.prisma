@@ -27,6 +27,7 @@ model Song {
   youtubeUrl String
   duration String
   filePath String
+  fileName String
   user User @relation(fields: [userId],references: [id])
   userId String 
 }

@@ -11,7 +11,7 @@ streamRoutes.get("/song", (req, res) => {
   }
   const songId = String(id);
   const DOWNLOAD_DIR = path.resolve(__dirname, "../../../downloads");
-  const filePath = path.join(DOWNLOAD_DIR, songId + ".mp3");
+  const filePath = path.join(DOWNLOAD_DIR, songId);
   audioStreaming(filePath, res);
 });
 
