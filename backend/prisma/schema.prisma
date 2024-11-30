@@ -17,6 +17,7 @@ model User {
   id String @default(uuid()) @unique
   name String
   email String @unique
+  verified Boolean @default(false)
   password String 
   songs Song[]
 } 

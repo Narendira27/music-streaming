@@ -4,7 +4,7 @@ import path from "path";
 const downloadAudio = (
   videoUrl: string,
   filePath: string
-): Promise<{ success: boolean; duration?: Number; error?: string }> => {
+): Promise<{ success: boolean; duration?: number; error?: string }> => {
   return new Promise((resolve, reject) => {
     const ytDlpCommand = [
       "yt-dlp",
@@ -106,3 +106,5 @@ const getAudioDuration = (filePath: string): Promise<number> => {
 };
 
 export default downloadAudio;
+
+export { getAudioDuration };

@@ -6,8 +6,8 @@ import fs from "fs";
 
 import validateSchema from "../../utils/validateSchema";
 import { songBodySchema } from "../../schemas/userSchema";
-import generateFileName from "../../utils/fileName";
-import downloadAudio from "../../utils/downloadAudio";
+import { generateFileName } from "../../utils/commonUtlis";
+import downloadAudio, { getAudioDuration } from "../../utils/downloadAudio";
 
 const prisma = new PrismaClient();
 
@@ -16,6 +16,10 @@ const userRoutes = express.Router();
 interface CustomRequest extends Request {
   id?: string;
 }
+
+userRoutes.get("/me", (req, res) => {
+  res.json({ msg: "ok" });
+});
 
 userRoutes.get("/song", async (req: CustomRequest, res: Response) => {
   try {
@@ -53,21 +57,32 @@ userRoutes.post("/song", async (req: CustomRequest, res: Response) => {
   const DOWNLOAD_DIR = path.resolve(__dirname, "../../../downloads");
   const filePath = path.join(DOWNLOAD_DIR, fileName);
 
+  let downloadResult;
+
+  let duration: number;
+
   if (fs.existsSync(filePath)) {
-    res.status(400).json({ msg: "Song already exits" });
-    return;
-  }
+    try {
+      duration = await getAudioDuration(filePath);
+    } catch (err) {
+      res.status(400).json({ msg: "Failed to get audio duration" });
+      return;
+    }
+  } else {
+    downloadResult = await downloadAudio(req.body.youtubeUrl, filePath);
+    if (downloadResult.success === false) {
+      res.status(400).json({ msg: downloadResult.error });
+      return;
+    }
 
-  const downloadResult = await downloadAudio(req.body.youtubeUrl, filePath);
+    if (downloadResult.duration === undefined) {
+      res
+        .status(400)
+        .json({ msg: "cannot determine the duration of the song" });
+      return;
+    }
 
-  if (downloadResult.success === false) {
-    res.status(400).json({ msg: downloadResult.error });
-    return;
-  }
-
-  if (downloadResult.duration === undefined) {
-    res.status(400).json({ msg: "cannot determine the duration of the song" });
-    return;
+    duration = downloadResult.duration;
   }
 
   try {
@@ -75,7 +90,7 @@ userRoutes.post("/song", async (req: CustomRequest, res: Response) => {
       data: {
         title: req.body.title,
         youtubeUrl: req.body.youtubeUrl,
-        duration: downloadResult.duration.toString(),
+        duration: duration.toString(),
         filePath: filePath,
         fileName: fileName,
         userId: req.id,
@@ -134,24 +149,32 @@ userRoutes.put("/song", async (req: CustomRequest, res: Response) => {
       return;
     }
   } else {
-    fs.unlink(getSongDetails.filePath, (err) => {
-      if (err) {
-        res.status(400).json({ msg: "something went wrong" });
+    let downloadResult;
+
+    let duration: number;
+
+    if (fs.existsSync(filePath)) {
+      try {
+        duration = await getAudioDuration(filePath);
+      } catch (err) {
+        res.status(400).json({ msg: "Failed to get audio duration" });
         return;
       }
-    });
-    const downloadResult = await downloadAudio(req.body.youtubeUrl, filePath);
+    } else {
+      downloadResult = await downloadAudio(req.body.youtubeUrl, filePath);
+      if (downloadResult.success === false) {
+        res.status(400).json({ msg: downloadResult.error });
+        return;
+      }
 
-    if (downloadResult.success === false) {
-      res.status(400).json({ msg: downloadResult.error });
-      return;
-    }
+      if (downloadResult.duration === undefined) {
+        res
+          .status(400)
+          .json({ msg: "cannot determine the duration of the song" });
+        return;
+      }
 
-    if (downloadResult.duration === undefined) {
-      res
-        .status(400)
-        .json({ msg: "cannot determine the duration of the song" });
-      return;
+      duration = downloadResult.duration;
     }
     try {
       await prisma.song.update({
@@ -159,7 +182,7 @@ userRoutes.put("/song", async (req: CustomRequest, res: Response) => {
         data: {
           title: req.body.title,
           youtubeUrl: req.body.youtubeUrl,
-          duration: downloadResult.duration.toString(),
+          duration: duration.toString(),
           filePath: filePath,
           fileName: fileName,
           userId: req.id,
@@ -179,21 +202,7 @@ userRoutes.delete("/song", async (req: CustomRequest, res: Response) => {
     return;
   }
   const DeleteId = String(id);
-
   try {
-    const getSongDetails = await prisma.song.findFirst({
-      where: { id: DeleteId, userId: req.id },
-    });
-    if (!getSongDetails) {
-      res.status(400).json({ msg: "song not found" });
-      return;
-    }
-    fs.unlink(getSongDetails.filePath, (err) => {
-      if (err) {
-        res.status(400).json({ msg: "something went wrong" });
-        return;
-      }
-    });
     await prisma.song.delete({
       where: { userId: req.id, id: DeleteId },
     });
