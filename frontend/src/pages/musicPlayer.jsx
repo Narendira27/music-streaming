@@ -62,6 +62,8 @@ export default function MusicPlayer() {
   const [newSong, setNewSong] = useState({ name: "", url: "" });
   const [songs, setSongs] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [updateDetails, setUpdateDetails] = useState({ name: "", url: "" });
+  const [deleteDetails, setDeleteDetails] = useState("");
 
   const [audio, setAudio] = useState(null);
 
@@ -235,7 +237,7 @@ export default function MusicPlayer() {
         }
       );
       toast.promise(responseAddSong, {
-        loading: "Loading... This might take some time",
+        loading: "AddingSong... This might take some time",
         success: () => {
           fetchSongs();
           return `Song has been added`;
@@ -342,6 +344,72 @@ export default function MusicPlayer() {
     Cookies.remove("auth-cookie");
     navigate("/");
     toast.info("You're successfully logged out!");
+  };
+
+  const onClickUpdate = (details) => {
+    setUpdateDetails({
+      name: details.title,
+      url: details.youtubeUrl,
+      id: details.id,
+    });
+    setIsDialogOpenUpdate(true);
+  };
+  const onClickDelete = (details) => {
+    setDeleteDetails(details.id);
+    setIsDialogOpenDelete(true);
+  };
+
+  const handleUpdateSong = () => {
+    if (updateDetails.name.length > 2 && updateDetails.url) {
+      const authToken = Cookies.get("auth-cookie");
+      const responseAddSong = axios.put(
+        API_URL + "/user/song?id=" + updateDetails.id,
+        {
+          title: updateDetails.name,
+          youtubeUrl: updateDetails.url,
+        },
+        {
+          headers: {
+            Authorization: "Bearer " + authToken,
+          },
+        }
+      );
+      toast.promise(responseAddSong, {
+        loading: "Updating... This might take some time",
+        success: () => {
+          fetchSongs();
+          return `Song has been Updated`;
+        },
+        error: (res) => {
+          return `Error : ${res.response.data.msg}`;
+        },
+      });
+      setUpdateDetails({ name: "", url: "" });
+      setIsDialogOpenUpdate(false);
+    }
+  };
+  const handleDeleteSong = () => {
+    const authToken = Cookies.get("auth-cookie");
+    const responseAddSong = axios.delete(
+      API_URL + "/user/song?id=" + deleteDetails,
+      {
+        headers: {
+          Authorization: "Bearer " + authToken,
+        },
+      }
+    );
+    toast.promise(responseAddSong, {
+      loading: "Deleting...",
+      success: () => {
+        fetchSongs();
+        return `Song has been Deleted`;
+      },
+      error: (res) => {
+        return `Error : ${res.response.data.msg}`;
+      },
+    });
+    setDeleteDetails("");
+    setIsDialogOpenDelete(false);
   };
 
   return (
@@ -451,12 +519,12 @@ export default function MusicPlayer() {
                               </DropdownMenuTrigger>
                               <DropdownMenuContent align="end">
                                 <DropdownMenuItem
-                                  onClick={() => setIsDialogOpenUpdate(true)}
+                                  onClick={() => onClickUpdate(song)}
                                 >
                                   Edit
                                 </DropdownMenuItem>
                                 <DropdownMenuItem
-                                  onClick={() => setIsDialogOpenDelete(true)}
+                                  onClick={() => onClickDelete(song)}
                                 >
                                   Remove{" "}
                                 </DropdownMenuItem>
@@ -531,7 +599,7 @@ export default function MusicPlayer() {
           <DialogContent className="sm:max-w-[425px]">
             <DialogHeader>
               <DialogTitle className="flex justify-between items-center text-foreground">
-                UpdateSong
+                Update
               </DialogTitle>
             </DialogHeader>
             <div className="grid gap-4 py-4">
@@ -544,9 +612,12 @@ export default function MusicPlayer() {
                 </label>
                 <Input
                   id="name"
-                  value={newSong.name}
+                  value={updateDetails.name}
                   onChange={(e) =>
-                    setNewSong({ ...newSong, name: e.target.value })
+                    setUpdateDetails((each) => ({
+                      ...each,
+                      name: e.target.value,
+                    }))
                   }
                   placeholder="Enter song name"
                   className="text-foreground placeholder:text-muted-foreground"
@@ -561,9 +632,12 @@ export default function MusicPlayer() {
                 </label>
                 <Input
                   id="url"
-                  value={newSong.url}
+                  value={updateDetails.url}
                   onChange={(e) =>
-                    setNewSong({ ...newSong, url: e.target.value })
+                    setUpdateDetails((each) => ({
+                      ...each,
+                      url: e.target.value,
+                    }))
                   }
                   placeholder="Enter YouTube URL"
                   className="text-foreground placeholder:text-muted-foreground"
@@ -571,10 +645,7 @@ export default function MusicPlayer() {
               </div>
             </div>
             <DialogFooter className="flex justify-between">
-              <Button variant="outline" onClick={() => setIsDialogOpen(false)}>
-                Close
-              </Button>
-              <Button onClick={handleAddSong}>Add Song</Button>
+              <Button onClick={handleUpdateSong}>Update Song </Button>
             </DialogFooter>
           </DialogContent>
         </Dialog>
@@ -587,10 +658,13 @@ export default function MusicPlayer() {
               </DialogTitle>
             </DialogHeader>
             <DialogFooter className="flex justify-between">
-              <Button variant="outline" onClick={() => setIsDialogOpen(false)}>
+              <Button
+                variant="outline"
+                onClick={() => setIsDialogOpenDelete(false)}
+              >
                 Close
               </Button>
-              <Button onClick={handleAddSong}>Delete</Button>
+              <Button onClick={handleDeleteSong}>Delete</Button>
             </DialogFooter>
           </DialogContent>
         </Dialog>
