@@ -88,7 +88,9 @@ export default function AuthPage() {
       loading: "Sending Request ....",
       success: (res) => {
         const token = res.data.token;
-        Cookies.set("auth-cookie", token);
+        Cookies.set("auth-cookie", token, {
+          expires: 7,
+        });
         navigate("/dashboard");
         setLoginInfo({ email: "", password: "" });
         const returnMsg = `Login Successful`;

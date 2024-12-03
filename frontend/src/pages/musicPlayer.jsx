@@ -413,7 +413,7 @@ export default function MusicPlayer() {
   };
 
   return (
-    <div className="min-h-screen flex flex-col bg-background text-foreground">
+    <div className="flex flex-col h-screen bg-background text-foreground">
       {/* Header */}
       <div className="sticky top-0 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 z-10 border-b">
         <div className="flex justify-between items-center p-4">
@@ -430,8 +430,8 @@ export default function MusicPlayer() {
       </div>
 
       {/* Main Content - Liked Songs */}
-      <div className="flex-1 min-h-screen p-4 overflow-hidden mb-6 flex flex-col">
-        <div className="flex items-center justify-between px-2 pt-2 pb-6">
+      <div className="flex-1 overflow-hidden flex flex-col">
+        <div className="flex items-center justify-between px-4 pt-2 pb-6">
           <h2 className="text-2xl font-bold ">Your Songs</h2>
           <div className="flex h-full items-center">
             <button
@@ -457,84 +457,86 @@ export default function MusicPlayer() {
         </div>
 
         {songs.length > 0 && loading === false ? (
-          <div className="rounded-md border border-border  overflow-hidden flex flex-col">
-            <div className="overflow-auto">
-              <Table>
-                <TableHeader className="sticky top-0 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 ">
-                  <TableRow>
-                    <TableHead className="w-[40px]"></TableHead>
+          <div className="flex-1 overflow-auto px-4">
+            <div className="rounded-md border border-border  ">
+              <div className="overflow-auto">
+                <Table>
+                  <TableHeader className="sticky top-0 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 ">
+                    <TableRow>
+                      <TableHead className="w-[40px]"></TableHead>
 
-                    <TableHead>Title</TableHead>
-                    {document.documentElement.clientWidth > 1024 ? (
-                      <TableHead>
-                        <div>Youtube URL</div>
-                      </TableHead>
-                    ) : null}
+                      <TableHead>Title</TableHead>
+                      {document.documentElement.clientWidth > 1024 ? (
+                        <TableHead>
+                          <div>Youtube URL</div>
+                        </TableHead>
+                      ) : null}
 
-                    <TableHead>Duration</TableHead>
-                    <TableHead className="w-[70px]"></TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {[...songs].map((song, index) => {
-                    return (
-                      <TableRow key={song.id} className="hover:bg-muted/50">
-                        <TableCell className="cursor-pointer px-2 lg:px-8">
-                          {song.isPlaying === true ? (
-                            <PauseCircle
-                              onClick={() => handlePlayPause()}
-                              className="h-6 w-6"
-                            />
-                          ) : (
-                            <PlayCircle
-                              onClick={() => onClickPlaySong(song)}
-                              className="h-6 w-6"
-                            />
-                          )}
-                        </TableCell>
-
-                        <TableCell className="font-medium">
-                          {song.title}
-                        </TableCell>
-                        {document.documentElement.clientWidth > 1024 ? (
-                          <TableCell className="text-muted-foreground">
-                            {song.youtubeUrl}
+                      <TableHead>Duration</TableHead>
+                      <TableHead className="w-[70px]"></TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {[...songs].map((song, index) => {
+                      return (
+                        <TableRow key={song.id} className="hover:bg-muted/50">
+                          <TableCell className="cursor-pointer px-2 lg:px-8">
+                            {song.isPlaying === true ? (
+                              <PauseCircle
+                                onClick={() => handlePlayPause()}
+                                className="h-6 w-6"
+                              />
+                            ) : (
+                              <PlayCircle
+                                onClick={() => onClickPlaySong(song)}
+                                className="h-6 w-6"
+                              />
+                            )}
                           </TableCell>
-                        ) : null}
-                        <TableCell className="text-muted-foreground">
-                          {convertSecToMinSec(parseFloat(song.duration))}
-                        </TableCell>
-                        <TableCell>
-                          <DropdownMenu>
-                            <DropdownMenuTrigger asChild>
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                className="h-8 w-8"
-                              >
-                                <MoreHorizontal className="h-4 w-4" />
-                                <span className="sr-only">More options</span>
-                              </Button>
-                            </DropdownMenuTrigger>
-                            <DropdownMenuContent align="end">
-                              <DropdownMenuItem
-                                onClick={() => onClickUpdate(song)}
-                              >
-                                Edit
-                              </DropdownMenuItem>
-                              <DropdownMenuItem
-                                onClick={() => onClickDelete(song)}
-                              >
-                                Remove{" "}
-                              </DropdownMenuItem>
-                            </DropdownMenuContent>
-                          </DropdownMenu>
-                        </TableCell>
-                      </TableRow>
-                    );
-                  })}
-                </TableBody>
-              </Table>
+
+                          <TableCell className="font-medium">
+                            {song.title}
+                          </TableCell>
+                          {document.documentElement.clientWidth > 1024 ? (
+                            <TableCell className="text-muted-foreground">
+                              {song.youtubeUrl}
+                            </TableCell>
+                          ) : null}
+                          <TableCell className="text-muted-foreground">
+                            {convertSecToMinSec(parseFloat(song.duration))}
+                          </TableCell>
+                          <TableCell>
+                            <DropdownMenu>
+                              <DropdownMenuTrigger asChild>
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  className="h-8 w-8"
+                                >
+                                  <MoreHorizontal className="h-4 w-4" />
+                                  <span className="sr-only">More options</span>
+                                </Button>
+                              </DropdownMenuTrigger>
+                              <DropdownMenuContent align="end">
+                                <DropdownMenuItem
+                                  onClick={() => onClickUpdate(song)}
+                                >
+                                  Edit
+                                </DropdownMenuItem>
+                                <DropdownMenuItem
+                                  onClick={() => onClickDelete(song)}
+                                >
+                                  Remove{" "}
+                                </DropdownMenuItem>
+                              </DropdownMenuContent>
+                            </DropdownMenu>
+                          </TableCell>
+                        </TableRow>
+                      );
+                    })}
+                  </TableBody>
+                </Table>
+              </div>
             </div>
           </div>
         ) : (
@@ -669,7 +671,7 @@ export default function MusicPlayer() {
       </Dialog>
 
       {/* Player */}
-      <div className="fixed bottom-0 left-0 right-0 border-t bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+      <div className=" border-t bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
         <div className="p-4 flex flex-col  gap-4">
           <div className="flex items-center gap-4 justify-center max-w-7xl mx-auto w-full">
             <div className="flex flex-col  items-center gap-2 flex-1 px-4 max-w-2xl">
