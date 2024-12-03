@@ -413,360 +413,358 @@ export default function MusicPlayer() {
   };
 
   return (
-    <>
-      <div className="min-h-screen flex flex-col bg-background text-foreground">
-        {/* Header */}
-        <div className="sticky top-0 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 z-10 border-b">
-          <div className="flex justify-between items-center p-4">
-            <h1 className="text-xl font-bold">Notify</h1>
-            <div className="flex items-center gap-2">
-              <ThemeToggle />
-              <Button onClick={() => setIsDialogOpen(true)}>
-                <Plus className="h-4 w-4 mr-2" />
-                Add Songs
-              </Button>
-              <Button onClick={handleLogout}>Logout</Button>
-            </div>
+    <div className="min-h-screen flex flex-col bg-background text-foreground">
+      {/* Header */}
+      <div className="sticky top-0 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 z-10 border-b">
+        <div className="flex justify-between items-center p-4">
+          <h1 className="text-xl font-bold">Notify</h1>
+          <div className="flex items-center gap-2">
+            <ThemeToggle />
+            <Button onClick={() => setIsDialogOpen(true)}>
+              <Plus className="h-4 w-4 mr-2" />
+              Add Songs
+            </Button>
+            <Button onClick={handleLogout}>Logout</Button>
+          </div>
+        </div>
+      </div>
+
+      {/* Main Content - Liked Songs */}
+      <div className="flex-1 min-h-screen p-4 overflow-hidden mb-6 flex flex-col">
+        <div className="flex items-center justify-between px-2 pt-2 pb-6">
+          <h2 className="text-2xl font-bold ">Your Songs</h2>
+          <div className="flex h-full items-center">
+            <button
+              onClick={handleShuffle}
+              className={`mx-2 rounded-full  flex justify-center p-0.5 w-10 ${
+                shuffleStatus === true
+                  ? " dark:text-black dark:bg-white  text-white  bg-black"
+                  : " dark:text-white text-black "
+              } `}
+            >
+              <Shuffle className="h-8 w-6" />
+            </button>
+
+            {isPlaying === true ? (
+              <PauseCircle className="cursor-pointer h-8 w-10" />
+            ) : (
+              <PlayCircle
+                onClick={handlePlayListPlay}
+                className="cursor-pointer h-8 w-10"
+              />
+            )}
           </div>
         </div>
 
-        {/* Main Content - Liked Songs */}
-        <div className="flex-1 p-4 overflow-hidden flex flex-col">
-          <div className="flex items-center justify-between px-2 pt-2 pb-6">
-            <h2 className="text-2xl font-bold ">Your Songs</h2>
-            <div className="flex h-full items-center">
-              <button
-                onClick={handleShuffle}
-                className={`mx-2 rounded-full  flex justify-center p-0.5 w-10 ${
-                  shuffleStatus === true
-                    ? " dark:text-black dark:bg-white  text-white  bg-black"
-                    : " dark:text-white text-black "
-                } `}
-              >
-                <Shuffle className="h-8 w-6" />
-              </button>
+        {songs.length > 0 && loading === false ? (
+          <div className="rounded-md border border-border  overflow-hidden flex flex-col">
+            <div className="overflow-auto">
+              <Table>
+                <TableHeader className="sticky top-0 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 ">
+                  <TableRow>
+                    <TableHead className="w-[40px]"></TableHead>
 
-              {isPlaying === true ? (
-                <PauseCircle className="cursor-pointer h-8 w-10" />
-              ) : (
-                <PlayCircle
-                  onClick={handlePlayListPlay}
-                  className="cursor-pointer h-8 w-10"
-                />
-              )}
-            </div>
-          </div>
+                    <TableHead>Title</TableHead>
+                    {document.documentElement.clientWidth > 1024 ? (
+                      <TableHead>
+                        <div>Youtube URL</div>
+                      </TableHead>
+                    ) : null}
 
-          {songs.length > 0 && loading === false ? (
-            <div className="rounded-md border border-border  overflow-hidden flex flex-col">
-              <div className="overflow-auto">
-                <Table>
-                  <TableHeader className="sticky top-0 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 ">
-                    <TableRow>
-                      <TableHead className="w-[40px]"></TableHead>
+                    <TableHead>Duration</TableHead>
+                    <TableHead className="w-[70px]"></TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {[...songs].map((song, index) => {
+                    return (
+                      <TableRow key={song.id} className="hover:bg-muted/50">
+                        <TableCell className="cursor-pointer px-2 lg:px-8">
+                          {song.isPlaying === true ? (
+                            <PauseCircle
+                              onClick={() => handlePlayPause()}
+                              className="h-6 w-6"
+                            />
+                          ) : (
+                            <PlayCircle
+                              onClick={() => onClickPlaySong(song)}
+                              className="h-6 w-6"
+                            />
+                          )}
+                        </TableCell>
 
-                      <TableHead>Title</TableHead>
-                      {document.documentElement.clientWidth > 1024 ? (
-                        <TableHead>
-                          <div>Youtube URL</div>
-                        </TableHead>
-                      ) : null}
-
-                      <TableHead>Duration</TableHead>
-                      <TableHead className="w-[70px]"></TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {[...songs].map((song, index) => {
-                      return (
-                        <TableRow key={song.id} className="hover:bg-muted/50">
-                          <TableCell className="cursor-pointer px-2 lg:px-8">
-                            {song.isPlaying === true ? (
-                              <PauseCircle
-                                onClick={() => handlePlayPause()}
-                                className="h-6 w-6"
-                              />
-                            ) : (
-                              <PlayCircle
-                                onClick={() => onClickPlaySong(song)}
-                                className="h-6 w-6"
-                              />
-                            )}
-                          </TableCell>
-
-                          <TableCell className="font-medium">
-                            {song.title}
-                          </TableCell>
-                          {document.documentElement.clientWidth > 1024 ? (
-                            <TableCell className="text-muted-foreground">
-                              {song.youtubeUrl}
-                            </TableCell>
-                          ) : null}
+                        <TableCell className="font-medium">
+                          {song.title}
+                        </TableCell>
+                        {document.documentElement.clientWidth > 1024 ? (
                           <TableCell className="text-muted-foreground">
-                            {convertSecToMinSec(parseFloat(song.duration))}
+                            {song.youtubeUrl}
                           </TableCell>
-                          <TableCell>
-                            <DropdownMenu>
-                              <DropdownMenuTrigger asChild>
-                                <Button
-                                  variant="ghost"
-                                  size="icon"
-                                  className="h-8 w-8"
-                                >
-                                  <MoreHorizontal className="h-4 w-4" />
-                                  <span className="sr-only">More options</span>
-                                </Button>
-                              </DropdownMenuTrigger>
-                              <DropdownMenuContent align="end">
-                                <DropdownMenuItem
-                                  onClick={() => onClickUpdate(song)}
-                                >
-                                  Edit
-                                </DropdownMenuItem>
-                                <DropdownMenuItem
-                                  onClick={() => onClickDelete(song)}
-                                >
-                                  Remove{" "}
-                                </DropdownMenuItem>
-                              </DropdownMenuContent>
-                            </DropdownMenu>
-                          </TableCell>
-                        </TableRow>
-                      );
-                    })}
-                  </TableBody>
-                </Table>
-              </div>
+                        ) : null}
+                        <TableCell className="text-muted-foreground">
+                          {convertSecToMinSec(parseFloat(song.duration))}
+                        </TableCell>
+                        <TableCell>
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="h-8 w-8"
+                              >
+                                <MoreHorizontal className="h-4 w-4" />
+                                <span className="sr-only">More options</span>
+                              </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end">
+                              <DropdownMenuItem
+                                onClick={() => onClickUpdate(song)}
+                              >
+                                Edit
+                              </DropdownMenuItem>
+                              <DropdownMenuItem
+                                onClick={() => onClickDelete(song)}
+                              >
+                                Remove{" "}
+                              </DropdownMenuItem>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })}
+                </TableBody>
+              </Table>
             </div>
-          ) : (
-            <div className="flex justify-center items-center ">
-              <h1>No songs to show. Please add some songs</h1>
-            </div>
-          )}
-        </div>
+          </div>
+        ) : (
+          <div className="flex justify-center items-center ">
+            <h1>No songs to show. Please add some songs</h1>
+          </div>
+        )}
+      </div>
 
-        {/* Add Song Dialog */}
-        <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-          <DialogContent className="sm:max-w-[425px]">
-            <DialogHeader>
-              <DialogTitle className="flex justify-between items-center text-foreground">
-                Add New Song
-              </DialogTitle>
-            </DialogHeader>
-            <div className="grid gap-4 py-4">
-              <div className="grid gap-2">
-                <label
-                  htmlFor="name"
-                  className="text-sm font-medium text-foreground"
-                >
-                  Song Name
-                </label>
-                <Input
-                  id="name"
-                  value={newSong.name}
-                  onChange={(e) =>
-                    setNewSong({ ...newSong, name: e.target.value })
-                  }
-                  placeholder="Enter song name"
-                  className="text-foreground placeholder:text-muted-foreground"
-                />
-              </div>
-              <div className="grid gap-2">
-                <label
-                  htmlFor="url"
-                  className="text-sm font-medium text-foreground"
-                >
-                  YouTube URL
-                </label>
-                <Input
-                  id="url"
-                  value={newSong.url}
-                  onChange={(e) =>
-                    setNewSong({ ...newSong, url: e.target.value })
-                  }
-                  placeholder="Enter YouTube URL"
-                  className="text-foreground placeholder:text-muted-foreground"
-                />
-              </div>
-            </div>
-            <DialogFooter className="flex justify-between">
-              <Button onClick={handleAddSong}>Add Song</Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
-
-        <Dialog open={isDialogOpenUpdate} onOpenChange={setIsDialogOpenUpdate}>
-          <DialogContent className="sm:max-w-[425px]">
-            <DialogHeader>
-              <DialogTitle className="flex justify-between items-center text-foreground">
-                Update
-              </DialogTitle>
-            </DialogHeader>
-            <div className="grid gap-4 py-4">
-              <div className="grid gap-2">
-                <label
-                  htmlFor="name"
-                  className="text-sm font-medium text-foreground"
-                >
-                  Song Name
-                </label>
-                <Input
-                  id="name"
-                  value={updateDetails.name}
-                  onChange={(e) =>
-                    setUpdateDetails((each) => ({
-                      ...each,
-                      name: e.target.value,
-                    }))
-                  }
-                  placeholder="Enter song name"
-                  className="text-foreground placeholder:text-muted-foreground"
-                />
-              </div>
-              <div className="grid gap-2">
-                <label
-                  htmlFor="url"
-                  className="text-sm font-medium text-foreground"
-                >
-                  YouTube URL
-                </label>
-                <Input
-                  id="url"
-                  value={updateDetails.url}
-                  onChange={(e) =>
-                    setUpdateDetails((each) => ({
-                      ...each,
-                      url: e.target.value,
-                    }))
-                  }
-                  placeholder="Enter YouTube URL"
-                  className="text-foreground placeholder:text-muted-foreground"
-                />
-              </div>
-            </div>
-            <DialogFooter className="flex justify-between">
-              <Button onClick={handleUpdateSong}>Update Song </Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
-
-        <Dialog open={isDialogOpenDelete} onOpenChange={setIsDialogOpenDelete}>
-          <DialogContent className="sm:max-w-[425px]">
-            <DialogHeader>
-              <DialogTitle className="flex justify-between items-center text-foreground">
-                Are You sure ? This cannot be undone.
-              </DialogTitle>
-            </DialogHeader>
-            <DialogFooter className="flex justify-between">
-              <Button
-                variant="outline"
-                onClick={() => setIsDialogOpenDelete(false)}
+      {/* Add Song Dialog */}
+      <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+        <DialogContent className="sm:max-w-[425px]">
+          <DialogHeader>
+            <DialogTitle className="flex justify-between items-center text-foreground">
+              Add New Song
+            </DialogTitle>
+          </DialogHeader>
+          <div className="grid gap-4 py-4">
+            <div className="grid gap-2">
+              <label
+                htmlFor="name"
+                className="text-sm font-medium text-foreground"
               >
-                Close
-              </Button>
-              <Button onClick={handleDeleteSong}>Delete</Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
+                Song Name
+              </label>
+              <Input
+                id="name"
+                value={newSong.name}
+                onChange={(e) =>
+                  setNewSong({ ...newSong, name: e.target.value })
+                }
+                placeholder="Enter song name"
+                className="text-foreground placeholder:text-muted-foreground"
+              />
+            </div>
+            <div className="grid gap-2">
+              <label
+                htmlFor="url"
+                className="text-sm font-medium text-foreground"
+              >
+                YouTube URL
+              </label>
+              <Input
+                id="url"
+                value={newSong.url}
+                onChange={(e) =>
+                  setNewSong({ ...newSong, url: e.target.value })
+                }
+                placeholder="Enter YouTube URL"
+                className="text-foreground placeholder:text-muted-foreground"
+              />
+            </div>
+          </div>
+          <DialogFooter className="flex justify-between">
+            <Button onClick={handleAddSong}>Add Song</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
-        {/* Player */}
-        <div className="fixed bottom-0 left-0 right-0 border-t bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-          <div className="p-4 flex flex-col  gap-4">
-            <div className="flex items-center gap-4 justify-center max-w-7xl mx-auto w-full">
-              <div className="flex flex-col  items-center gap-2 flex-1 px-4 max-w-2xl">
-                <div className="text-lg font-medium">
-                  {playingQueue.length === 0 ||
-                  playingQueue.length - 1 < currentSongIndex
-                    ? "Play a Song"
-                    : playingQueue[currentSongIndex].title}
-                </div>
-                <div className="flex items-center gap-4">
-                  <Button
-                    onClick={handleReShuffle}
-                    variant="ghost"
-                    size="icon"
-                    className="h-8 w-8"
-                  >
-                    <Shuffle className="h-4 w-4" />
-                  </Button>
-                  <Button
-                    disabled={currentSongIndex === 0}
-                    onClick={handlePrev}
-                    variant="ghost"
-                    size="icon"
-                    className="h-8 w-8"
-                  >
-                    <SkipBack className="h-4 w-4" />
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="h-10 w-10 rounded-full"
-                    onClick={handlePlayPause}
-                  >
-                    {isPlaying ? (
-                      <PauseCircle className="h-8 w-8" />
-                    ) : (
-                      <PlayCircle className="h-8 w-8" />
-                    )}
-                  </Button>
-                  <Button
-                    disabled={
-                      currentSongIndex === playingQueue.length - 1 ||
-                      playingQueue.length === 0
-                    }
-                    onClick={handleNext}
-                    variant="ghost"
-                    size="icon"
-                    className="h-8 w-8"
-                  >
-                    <SkipForward className="h-4 w-4" />
-                  </Button>
-                  <Button
-                    onClick={handleRepeat}
-                    variant="ghost"
-                    size="icon"
-                    className={
-                      repeatStatus === true
-                        ? "dark:bg-white dark:text-black bg-black text-white h-8 w-8"
-                        : "h-8 w-8"
-                    }
-                  >
-                    <Repeat className="h-4 w-4" />
-                  </Button>
-                </div>
-                <div className="flex items-center gap-2 w-full">
-                  <span className="text-sm text-muted-foreground w-12 text-right">
-                    {convertSecToMinSec(currentTime)}
-                  </span>
-                  <Slider
-                    value={progress}
-                    onValueChange={(value) => handleProgressBar(value)}
-                    max={100}
-                    step={1}
-                    className="w-full"
-                  />
-                  <span className="text-sm text-muted-foreground w-12">
-                    {convertSecToMinSec(duration)}
-                  </span>
-                </div>
+      <Dialog open={isDialogOpenUpdate} onOpenChange={setIsDialogOpenUpdate}>
+        <DialogContent className="sm:max-w-[425px]">
+          <DialogHeader>
+            <DialogTitle className="flex justify-between items-center text-foreground">
+              Update
+            </DialogTitle>
+          </DialogHeader>
+          <div className="grid gap-4 py-4">
+            <div className="grid gap-2">
+              <label
+                htmlFor="name"
+                className="text-sm font-medium text-foreground"
+              >
+                Song Name
+              </label>
+              <Input
+                id="name"
+                value={updateDetails.name}
+                onChange={(e) =>
+                  setUpdateDetails((each) => ({
+                    ...each,
+                    name: e.target.value,
+                  }))
+                }
+                placeholder="Enter song name"
+                className="text-foreground placeholder:text-muted-foreground"
+              />
+            </div>
+            <div className="grid gap-2">
+              <label
+                htmlFor="url"
+                className="text-sm font-medium text-foreground"
+              >
+                YouTube URL
+              </label>
+              <Input
+                id="url"
+                value={updateDetails.url}
+                onChange={(e) =>
+                  setUpdateDetails((each) => ({
+                    ...each,
+                    url: e.target.value,
+                  }))
+                }
+                placeholder="Enter YouTube URL"
+                className="text-foreground placeholder:text-muted-foreground"
+              />
+            </div>
+          </div>
+          <DialogFooter className="flex justify-between">
+            <Button onClick={handleUpdateSong}>Update Song </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={isDialogOpenDelete} onOpenChange={setIsDialogOpenDelete}>
+        <DialogContent className="sm:max-w-[425px]">
+          <DialogHeader>
+            <DialogTitle className="flex justify-between items-center text-foreground">
+              Are You sure ? This cannot be undone.
+            </DialogTitle>
+          </DialogHeader>
+          <DialogFooter className="flex justify-between">
+            <Button
+              variant="outline"
+              onClick={() => setIsDialogOpenDelete(false)}
+            >
+              Close
+            </Button>
+            <Button onClick={handleDeleteSong}>Delete</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Player */}
+      <div className="fixed bottom-0 left-0 right-0 border-t bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+        <div className="p-4 flex flex-col  gap-4">
+          <div className="flex items-center gap-4 justify-center max-w-7xl mx-auto w-full">
+            <div className="flex flex-col  items-center gap-2 flex-1 px-4 max-w-2xl">
+              <div className="text-lg font-medium">
+                {playingQueue.length === 0 ||
+                playingQueue.length - 1 < currentSongIndex
+                  ? "Play a Song"
+                  : playingQueue[currentSongIndex].title}
               </div>
-              <div className=" hidden lg:flex items-center space-x-2 min-w-[140px] justify-end">
-                <Button variant="ghost" size="icon" className="h-8 w-8">
-                  <Volume2 className="h-4 w-4" />
+              <div className="flex items-center gap-4">
+                <Button
+                  onClick={handleReShuffle}
+                  variant="ghost"
+                  size="icon"
+                  className="h-8 w-8"
+                >
+                  <Shuffle className="h-4 w-4" />
                 </Button>
+                <Button
+                  disabled={currentSongIndex === 0}
+                  onClick={handlePrev}
+                  variant="ghost"
+                  size="icon"
+                  className="h-8 w-8"
+                >
+                  <SkipBack className="h-4 w-4" />
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-10 w-10 rounded-full"
+                  onClick={handlePlayPause}
+                >
+                  {isPlaying ? (
+                    <PauseCircle className="h-8 w-8" />
+                  ) : (
+                    <PlayCircle className="h-8 w-8" />
+                  )}
+                </Button>
+                <Button
+                  disabled={
+                    currentSongIndex === playingQueue.length - 1 ||
+                    playingQueue.length === 0
+                  }
+                  onClick={handleNext}
+                  variant="ghost"
+                  size="icon"
+                  className="h-8 w-8"
+                >
+                  <SkipForward className="h-4 w-4" />
+                </Button>
+                <Button
+                  onClick={handleRepeat}
+                  variant="ghost"
+                  size="icon"
+                  className={
+                    repeatStatus === true
+                      ? "dark:bg-white dark:text-black bg-black text-white h-8 w-8"
+                      : "h-8 w-8"
+                  }
+                >
+                  <Repeat className="h-4 w-4" />
+                </Button>
+              </div>
+              <div className="flex items-center gap-2 w-full">
+                <span className="text-sm text-muted-foreground w-12 text-right">
+                  {convertSecToMinSec(currentTime)}
+                </span>
                 <Slider
-                  value={volume}
-                  onValueChange={(value) => handleVolumeChange(value)}
+                  value={progress}
+                  onValueChange={(value) => handleProgressBar(value)}
                   max={100}
                   step={1}
-                  className="w-24"
+                  className="w-full"
                 />
+                <span className="text-sm text-muted-foreground w-12">
+                  {convertSecToMinSec(duration)}
+                </span>
               </div>
+            </div>
+            <div className=" hidden lg:flex items-center space-x-2 min-w-[140px] justify-end">
+              <Button variant="ghost" size="icon" className="h-8 w-8">
+                <Volume2 className="h-4 w-4" />
+              </Button>
+              <Slider
+                value={volume}
+                onValueChange={(value) => handleVolumeChange(value)}
+                max={100}
+                step={1}
+                className="w-24"
+              />
             </div>
           </div>
         </div>
       </div>
-    </>
+    </div>
   );
 }
