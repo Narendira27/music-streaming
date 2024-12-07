@@ -71,11 +71,13 @@ const ExactLinkFromHTML = (htmlText: string): Promise<string> => {
       return reject("onClick attribute not found on the button.");
     }
 
-    const urlRegex = /'(https:\/\/redirector\.googlevideo\.com[^\']+)'/;
+    console.log(onClickValue);
+
+    const urlRegex = /https?:\/\/[^\s'"]+/;
     const urlMatch = onClickValue.match(urlRegex);
 
     if (urlMatch) {
-      const downloadLink = urlMatch[1];
+      const downloadLink = urlMatch[0];
       return resolve(downloadLink);
     } else {
       return reject("Download link not found in onClick attribute.");
