@@ -1,144 +1,7 @@
 import axios from "axios";
-
 import fs from "fs";
 import ffmpeg from "fluent-ffmpeg";
-import * as cheerio from "cheerio";
-
-const getHTMLFile = async (ytUrl: string) => {
-  const myHeaders = {
-    accept:
-      "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8",
-    "accept-language": "en-US,en;q=0.9",
-    "cache-control": "max-age=0",
-    "content-type": "application/x-www-form-urlencoded",
-    cookie: "pll_language=en",
-    origin: "https://ssyoutube.online",
-    priority: "u=0, i",
-    referer: "https://ssyoutube.online/",
-    "sec-ch-ua": '"Brave";v="131", "Chromium";v="131", "Not_A Brand";v="24"',
-    "sec-ch-ua-mobile": "?0",
-    "sec-ch-ua-platform": '"Linux"',
-    "sec-fetch-dest": "document",
-    "sec-fetch-mode": "navigate",
-    "sec-fetch-site": "same-origin",
-    "sec-gpc": "1",
-    "upgrade-insecure-requests": "1",
-    "user-agent":
-      "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36",
-  };
-
-  const urlencoded = new URLSearchParams();
-  urlencoded.append("videoURL", ytUrl);
-
-  const requestOptions = {
-    method: "POST",
-    url: "https://ssyoutube.online/yt-video-detail/",
-    headers: myHeaders,
-    data: urlencoded.toString(),
-  };
-
-  try {
-    const response = await axios(requestOptions);
-    return response.data;
-  } catch {
-    return "Error Occurred While Fetching the HTML";
-  }
-};
-
-const ExactLinkFromHTML = (htmlText: string): Promise<string> => {
-  return new Promise((resolve, reject) => {
-    const $ = cheerio.load(htmlText);
-
-    const table = $("table.list");
-    if (!table.length) {
-      return reject("Table with class 'list' not found.");
-    }
-
-    const secondRow = table.find("tr").eq(1);
-    if (!secondRow.length) {
-      return reject("Second row not found in the table.");
-    }
-
-    const button = secondRow.find('button[type="button"][value="Download"]');
-    if (!button.length) {
-      return reject(
-        "Button with type='button' and value='Download' not found."
-      );
-    }
-
-    const onClickValue = button.attr("onclick");
-    if (!onClickValue) {
-      return reject("onClick attribute not found on the button.");
-    }
-
-    console.log(onClickValue);
-
-    const urlRegex = /https?:\/\/[^\s'"]+/;
-    const urlMatch = onClickValue.match(urlRegex);
-
-    if (urlMatch) {
-      const downloadLink = urlMatch[0];
-      return resolve(downloadLink);
-    } else {
-      return reject("Download link not found in onClick attribute.");
-    }
-  });
-};
-
-const downloadAudio = (link: string, path: string): Promise<string> => {
-  return new Promise((resolve, reject) => {
-    const filePath = path.slice(0, path.length - 4) + ".m4a";
-
-    axios({
-      method: "GET",
-      url: link,
-      responseType: "stream",
-    })
-      .then((response) => {
-        const writer = fs.createWriteStream(filePath);
-
-        response.data.pipe(writer);
-
-        writer.on("finish", () => {
-          resolve(filePath);
-        });
-
-        writer.on("error", (err) => {
-          console.error("Error writing audio file:", err);
-          reject("Error writing audio file: " + err.message);
-        });
-      })
-      .catch((err) => {
-        console.error("Error downloading audio:", err);
-        reject("Error downloading audio: " + err.message);
-      });
-  });
-};
-
-function convertM4AToMP3(inputFilePath: string): Promise<string> {
-  return new Promise((resolve, reject) => {
-    const mp3FilePath =
-      inputFilePath.slice(0, inputFilePath.length - 4) + ".mp3";
-    ffmpeg(inputFilePath)
-      .output(mp3FilePath)
-      .on("end", () => {
-        fs.unlink(inputFilePath, (err) => {
-          if (err) {
-            console.error("Error deleting M4A file:", err);
-          } else {
-            console.log("M4A file deleted.");
-          }
-        });
-        console.log("Conversion complete. MP3 file saved to:", mp3FilePath);
-        resolve(mp3FilePath);
-      })
-      .on("error", (err) => {
-        console.error("Error during conversion:", err);
-        reject(err);
-      })
-      .run();
-  });
-}
+import FormData from "form-data";
 
 function getAudioDuration(filePath: string): Promise<number> {
   return new Promise((resolve, reject) => {
@@ -154,16 +17,140 @@ function getAudioDuration(filePath: string): Promise<number> {
   });
 }
 
+function extractYouTubeID(url: string) {
+  const regex =
+    /(?:https?:\/\/)?(?:www\.)?(?:youtube\.com\/(?:[^\/\n\s]+\/\S+\/|(?:v|e(?:mbed)?)\/|\S*?[?&]v=)|youtu\.be\/)([a-zA-Z0-9_-]{11})/;
+  const match = url.match(regex);
+  return match ? match[1] : "UnSupported YT URL";
+}
+
+const getDownloadURL = async (ytid: string) => {
+  let data = new FormData();
+  data.append("videoid", ytid);
+  data.append("downtype", "mp3");
+  data.append("vquality", "320");
+
+  let config = {
+    method: "post",
+    maxBodyLength: Infinity,
+    url: "https://179a.mmnm.store/oajax.php",
+    headers: {
+      accept: "*/*",
+      "accept-language": "en-US,en;q=0.9",
+      "cache-control": "no-cache",
+      "content-type": "application/x-www-form-urlencoded; charset=UTF-8",
+      origin: "https://179a.mmnm.store",
+      pragma: "no-cache",
+      priority: "u=1, i",
+      referer: "https://179a.mmnm.store/?videoId=tOM-nWPcR4U",
+      "sec-ch-ua": '"Brave";v="131", "Chromium";v="131", "Not_A Brand";v="24"',
+      "sec-ch-ua-mobile": "?0",
+      "sec-ch-ua-platform": '"Linux"',
+      "sec-fetch-dest": "empty",
+      "sec-fetch-mode": "cors",
+      "sec-fetch-site": "same-origin",
+      "sec-gpc": "1",
+      "user-agent":
+        "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36",
+      "x-requested-with": "XMLHttpRequest",
+      ...data.getHeaders(),
+    },
+    data: data,
+  };
+  try {
+    const response = await axios.request(config);
+    return response.data.url;
+  } catch (e) {
+    console.log(e);
+    return "Error : File Not Found";
+  }
+};
+
+function downloadAudioFile(url: string, filePath: string): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const config = {
+      method: "get",
+      maxBodyLength: Infinity,
+      url: url,
+      headers: {
+        Accept:
+          "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8",
+        "Accept-Language": "en-US,en;q=0.9",
+        "Cache-Control": "no-cache",
+        Pragma: "no-cache",
+        Priority: "u=0, i",
+        Referer: "https://179a.mmnm.store/",
+        "Sec-CH-UA":
+          '"Brave";v="131", "Chromium";v="131", "Not_A Brand";v="24"',
+        "Sec-CH-UA-Mobile": "?0",
+        "Sec-CH-UA-Platform": '"Linux"',
+        "Sec-Fetch-Dest": "iframe",
+        "Sec-Fetch-Mode": "navigate",
+        "Sec-Fetch-Site": "cross-site",
+        "Sec-Fetch-User": "?1",
+        "Sec-GPC": "1",
+        "Upgrade-Insecure-Requests": "1",
+        "User-Agent":
+          "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36",
+      },
+      timeout: 10000, // Timeout in milliseconds
+      responseType: "stream", // Required for downloading large files
+    };
+
+    axios
+      // @ts-ignore
+      .request(config)
+      .then((response) => {
+        const fileStream = fs.createWriteStream(filePath);
+
+        response.data.pipe(fileStream);
+
+        fileStream.on("finish", () => {
+          resolve(`Audio file downloaded successfully to ${filePath}`);
+        });
+
+        fileStream.on("error", (err) => {
+          reject(`Error writing to file: ${err.message}`);
+        });
+      })
+      .catch((error) => {
+        reject(`Error downloading the file: ${error.message}`);
+      });
+  });
+}
+
 const downloadYoutubeAudio = async (link: string, filepath: string) => {
   try {
-    const HTMLText = await getHTMLFile(link);
-    if (HTMLText === "Error Occurred While Fetching the HTML") {
-      throw new Error("Failed to fetch HTML from the link.");
+    const ytId = extractYouTubeID(link);
+    if (ytId === "UnSupported YT URL") {
+      throw new Error("UnSupported YT URL");
     }
-    const getLink = await ExactLinkFromHTML(HTMLText);
-    const downloadedPath = await downloadAudio(getLink, filepath);
-    const convertedPath = await convertM4AToMP3(downloadedPath);
-    const duration = await getAudioDuration(convertedPath);
+    let downloadUrl = await getDownloadURL(ytId);
+    if (downloadUrl === undefined) {
+      let RETRY_COUNT = 0;
+      const MAX_RETRY = 5;
+      while (RETRY_COUNT < MAX_RETRY && downloadUrl === undefined) {
+        RETRY_COUNT++;
+        console.log(`Retrying... Attempt ${RETRY_COUNT}`);
+
+        await new Promise((resolve) => setTimeout(resolve, 200));
+
+        downloadUrl = await getDownloadURL(ytId);
+
+        if (downloadUrl !== undefined) {
+          console.log("Download URL retrieved successfully");
+          break;
+        }
+
+        if (RETRY_COUNT === MAX_RETRY) {
+          throw new Error(
+            "Max retries reached. Could not retrieve the download URL."
+          );
+        }
+      }
+    }
+    await downloadAudioFile(downloadUrl, filepath);
+    const duration = await getAudioDuration(filepath);
     return {
       success: true,
       duration,
