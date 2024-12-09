@@ -34,6 +34,7 @@ import {
   Repeat,
   Shuffle,
   Plus,
+  ListMusic,
 } from "lucide-react";
 
 import axios from "axios";
@@ -42,12 +43,26 @@ import Cookies from "js-cookie";
 import { toast } from "sonner";
 import { API_URL } from "@/lib/url";
 import { useNavigate } from "react-router-dom";
+import {
+  closestCorners,
+  DndContext,
+  KeyboardSensor,
+  PointerSensor,
+  TouchSensor,
+  useSensor,
+  useSensors,
+} from "@dnd-kit/core";
+import ManageQueue from "@/components/queueList";
+import { arrayMove, sortableKeyboardCoordinates } from "@dnd-kit/sortable";
 
 export default function MusicPlayer() {
   const [isPlaying, setIsPlaying] = useState(false);
-  const [shuffleStatus, setShuffleStatus] = useState(false);
+
   const [playingQueue, setPlayingQueue] = useState([]);
   const [currentSongIndex, setCurrentSongIndex] = useState(0);
+  const [currentSong, setCurrentSong] = useState({});
+
+  const [shuffleStatus, setShuffleStatus] = useState(false);
   const [repeatStatus, setRepeatStatus] = useState(false);
   const repeatStatusRef = useRef(repeatStatus);
 
@@ -59,13 +74,15 @@ export default function MusicPlayer() {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [isDialogOpenUpdate, setIsDialogOpenUpdate] = useState(false);
   const [isDialogOpenDelete, setIsDialogOpenDelete] = useState(false);
+
   const [newSong, setNewSong] = useState({ name: "", url: "" });
   const [songs, setSongs] = useState([]);
+
   const [loading, setLoading] = useState(true);
   const [updateDetails, setUpdateDetails] = useState({ name: "", url: "" });
   const [deleteDetails, setDeleteDetails] = useState("");
 
-  const [audio, setAudio] = useState(null);
+  const [audio] = useState(new Audio());
 
   const navigate = useNavigate();
 
@@ -105,7 +122,10 @@ export default function MusicPlayer() {
   }, []);
 
   useEffect(() => {
-    const authToken = Cookies.get("auth-cookie");
+    setCurrentSong({ ...playingQueue[currentSongIndex] });
+  }, [currentSongIndex]);
+
+  useEffect(() => {
     if (audio !== null) audio.src = "";
 
     if (playingQueue.length === 0) {
@@ -115,14 +135,13 @@ export default function MusicPlayer() {
 
     if (playingQueue.length - 1 < currentSongIndex) {
       setIsPlaying(false);
-      setCurrentSongIndex(0);
+      setCurrentSongIndex("");
       setPlayingQueue([]);
       setProgress([0]);
       return;
     }
 
     const fetchAndPlaySong = async () => {
-      const currentSong = playingQueue[currentSongIndex];
       const authToken = Cookies.get("auth-cookie");
 
       try {
@@ -137,21 +156,23 @@ export default function MusicPlayer() {
         );
 
         const url = URL.createObjectURL(response.data);
-        const newAudio = new Audio(url);
 
-        setAudio(newAudio);
+        audio.src = url;
 
-        newAudio.onloadedmetadata = () => {
-          setDuration(newAudio.duration);
+        audio.onloadedmetadata = () => {
+          setDuration(audio.duration);
         };
 
-        newAudio.ontimeupdate = () => {
-          setCurrentTime(newAudio.currentTime);
-          if (newAudio.duration > 0) {
-            setProgress([(newAudio.currentTime / newAudio.duration) * 100]);
+        audio.ontimeupdate = () => {
+          setCurrentTime(audio.currentTime);
+          if (audio.duration > 0) {
+            setProgress([(audio.currentTime / audio.duration) * 100]);
           }
         };
-        newAudio.play();
+
+        audio.play();
+        setIsPlaying(true);
+
         const getPlayingId = playingQueue[currentSongIndex].id;
         const updateSongsList = songs.map((each) => {
           if (each.id === getPlayingId) {
@@ -160,20 +181,21 @@ export default function MusicPlayer() {
           return { ...each, isPlaying: false };
         });
         setSongs(updateSongsList);
+
         toast.success("Playing: " + currentSong.title, {
           position: "top-left",
         });
 
-        newAudio.onended = () => {
+        audio.onended = () => {
           if (repeatStatusRef.current) {
-            newAudio.currentTime = 0;
-            newAudio.play();
+            audio.currentTime = 0;
+            audio.play();
             setRepeatStatus(false);
           } else {
             const updatePlayingIndex = currentSongIndex + 1;
             setCurrentSongIndex(updatePlayingIndex);
             if (playingQueue.length > 0) {
-              let getPlayingId = playingQueue[currentSongIndex];
+              let getPlayingId = currentSong;
               const updateSongsList = songs.map((each) => {
                 if (each.id === getPlayingId) {
                   return { ...each, isPlaying: true };
@@ -187,14 +209,16 @@ export default function MusicPlayer() {
           }
         };
       } catch (error) {
+        console.log(error);
         toast.error(
-          `Error: ${error.response?.data?.msg || "Something went wrong"}`,
-          { id: toastId }
+          `Error: ${error.response?.data?.msg || "Something went wrong"}`
         );
       }
     };
 
-    fetchAndPlaySong();
+    if (currentSong.fileName !== undefined) {
+      fetchAndPlaySong();
+    }
 
     return () => {
       if (audio) {
@@ -202,7 +226,7 @@ export default function MusicPlayer() {
         audio.src = "";
       }
     };
-  }, [playingQueue, currentSongIndex]);
+  }, [currentSong]);
 
   const handleVolumeChange = (value) => {
     setVolume(value);
@@ -210,14 +234,16 @@ export default function MusicPlayer() {
   };
 
   const handlePlayPause = () => {
-    if (isPlaying) {
-      audio.pause();
-      setIsPlaying(false);
-      toast.info("Pause");
-    } else {
-      audio.play();
-      setIsPlaying(true);
-      toast.info("Playing");
+    if (playingQueue.length > 0) {
+      if (isPlaying) {
+        audio.pause();
+        setIsPlaying(false);
+        toast.info("Pause");
+      } else {
+        audio.play();
+        setIsPlaying(true);
+        toast.info("Playing");
+      }
     }
   };
 
@@ -272,6 +298,7 @@ export default function MusicPlayer() {
     setSongs(updateArr);
     setIsPlaying(true);
     setPlayingQueue((prev) => [data, ...prev]);
+    setCurrentSong(data);
   };
 
   const handleProgressBar = (value) => {
@@ -306,10 +333,12 @@ export default function MusicPlayer() {
       const duplicateSong = [...songs];
       const shuffledArray = shuffle(duplicateSong);
       setPlayingQueue(shuffledArray);
+      setCurrentSong(shuffledArray[0]);
       setIsPlaying(true);
       toast.info("Playing Added Songs | Shuffle Enabled");
     } else {
       setPlayingQueue(songs);
+      setCurrentSong(songs[0]);
       setIsPlaying(true);
       toast.info("Playing Added Songs | Shuffle Disabled");
     }
@@ -319,6 +348,7 @@ export default function MusicPlayer() {
     const duplicateSong = [...songs];
     const shuffledArray = shuffle(duplicateSong);
     setPlayingQueue(shuffledArray);
+    setCurrentSong(shuffledArray[0]);
     setIsPlaying(true);
     toast.info("Shuffled, Playing Now ....");
   };
@@ -412,6 +442,36 @@ export default function MusicPlayer() {
     setIsDialogOpenDelete(false);
   };
 
+  const getPosition = (id) => playingQueue.findIndex((item) => item.id === id);
+
+  const handleDragEnd = (event) => {
+    const { active, over } = event;
+    if (!over) return;
+
+    if (Math.abs(event.delta.x) > 100) {
+      setPlayingQueue((prev) => prev.filter((item) => item.id !== active.id));
+      toast.info("Song removed from queue");
+      return;
+    }
+
+    setPlayingQueue((items) => {
+      const originalPos = getPosition(active.id);
+      const newPos = getPosition(over.id);
+      toast.info("Song Queue Updated");
+      return arrayMove(items, originalPos, newPos);
+    });
+  };
+
+  const sensors = useSensors(
+    useSensor(PointerSensor),
+    useSensor(TouchSensor),
+    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
+  );
+
+  const onClickAddToQueue = (each) => {
+    if (playingQueue.length >= 1) setPlayingQueue((prev) => [...prev, each]);
+  };
+
   return (
     <div className="flex flex-col h-screen bg-background text-foreground">
       {/* Header */}
@@ -434,6 +494,51 @@ export default function MusicPlayer() {
         <div className="flex items-center justify-between px-4 pt-2 pb-6">
           <h2 className="text-2xl font-bold ">Your Songs</h2>
           <div className="flex h-full items-center">
+            <DropdownMenu>
+              <DropdownMenuTrigger>
+                <ListMusic />
+              </DropdownMenuTrigger>
+              <DropdownMenuContent>
+                <div className="rounded-lg  p-4">
+                  <h1 className="text-xl mb-1 font-bold ">Queue</h1>
+                  {playingQueue.length > 0 ? (
+                    <p className="text-md  mt-4 mb-4">
+                      <span className="font-bold mr-2">
+                        {" "}
+                        Currently Playing :
+                      </span>
+                      {"  "}
+                      {currentSong.title}{" "}
+                    </p>
+                  ) : null}
+                  {playingQueue.length > 1 ? (
+                    <p className="text-md text-center mb-1 ">
+                      Next Song in your playlist{" "}
+                    </p>
+                  ) : (
+                    <p className="text-md text-center mb-2 mt-2 ">
+                      Play / Add songs to Queue{" "}
+                    </p>
+                  )}
+                  <DndContext
+                    sensors={sensors}
+                    onDragEnd={handleDragEnd}
+                    collisionDetection={closestCorners}
+                  >
+                    <ManageQueue
+                      playingQueue={playingQueue}
+                      currentSongIndex={currentSongIndex}
+                    />
+                  </DndContext>
+                  {playingQueue.length > 1 ? (
+                    <p className="text-xs text-center mt-2 ">
+                      Swipe Left/Right to remove Song from Queue{" "}
+                    </p>
+                  ) : null}
+                </div>
+              </DropdownMenuContent>
+            </DropdownMenu>
+
             <button
               onClick={handleShuffle}
               className={`mx-2 rounded-full  flex justify-center p-0.5 w-10 ${
@@ -459,7 +564,7 @@ export default function MusicPlayer() {
         {songs.length > 0 && loading === false ? (
           <div className="flex-1 overflow-auto px-4">
             <div className="rounded-md border border-border  ">
-              <div className="overflow-auto">
+              <div className="">
                 <Table>
                   <TableHeader className="sticky top-0 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 ">
                     <TableRow>
@@ -527,6 +632,15 @@ export default function MusicPlayer() {
                                   onClick={() => onClickDelete(song)}
                                 >
                                   Remove{" "}
+                                </DropdownMenuItem>
+
+                                <DropdownMenuItem
+                                  onClick={() => onClickAddToQueue(song)}
+                                  disabled={
+                                    playingQueue.length >= 1 ? false : true
+                                  }
+                                >
+                                  Add to Queue{" "}
                                 </DropdownMenuItem>
                               </DropdownMenuContent>
                             </DropdownMenu>
@@ -679,7 +793,7 @@ export default function MusicPlayer() {
                 {playingQueue.length === 0 ||
                 playingQueue.length - 1 < currentSongIndex
                   ? "Play a Song"
-                  : playingQueue[currentSongIndex].title}
+                  : currentSong.title}
               </div>
               <div className="flex items-center gap-4">
                 <Button
