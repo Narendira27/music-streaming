@@ -126,6 +126,19 @@ export default function MusicPlayer() {
   }, [currentSongIndex]);
 
   useEffect(() => {
+    if ("mediaSession" in navigator && currentSong !== undefined) {
+      navigator.mediaSession.metadata = new window.MediaMetadata({
+        title: currentSong.title,
+      });
+
+      navigator.mediaSession.setActionHandler("play", togglePlay);
+      navigator.mediaSession.setActionHandler("pause", togglePause);
+      navigator.mediaSession.setActionHandler("previoustrack", handleNext);
+      navigator.mediaSession.setActionHandler("nexttrack", handleNext);
+    }
+  }, [currentSongIndex, currentSong]);
+
+  useEffect(() => {
     if (audio !== null) audio.src = "";
 
     if (playingQueue.length === 0) {
@@ -245,6 +258,18 @@ export default function MusicPlayer() {
         toast.info("Playing");
       }
     }
+  };
+
+  const togglePause = () => {
+    audio.pause();
+    setIsPlaying(false);
+    toast.info("Pause");
+  };
+
+  const togglePlay = () => {
+    audio.play();
+    setIsPlaying(true);
+    toast.info("Playing");
   };
 
   const handleAddSong = async () => {
