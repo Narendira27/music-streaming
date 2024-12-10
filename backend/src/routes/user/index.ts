@@ -7,7 +7,7 @@ import fs from "fs";
 import validateSchema from "../../utils/validateSchema";
 import { songBodySchema } from "../../schemas/userSchema";
 import { generateFileName } from "../../utils/commonUtlis";
-import downloadAudio, { getAudioDuration } from "../../utils/downloadAudio";
+import downloadAudio, { getAudioDuration } from "../../utils/downloadAudioV1";
 
 const prisma = new PrismaClient();
 
