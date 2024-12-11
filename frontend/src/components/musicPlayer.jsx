@@ -44,7 +44,7 @@ import { toast } from "sonner";
 import { API_URL } from "@/lib/url";
 import { useNavigate } from "react-router-dom";
 import {
-  closestCorners,
+  rectIntersection,
   DndContext,
   KeyboardSensor,
   PointerSensor,
