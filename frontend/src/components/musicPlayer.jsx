@@ -556,6 +556,7 @@ export default function MusicPlayer({ hiddenLink }) {
                       </p>
                     )}
                     <DndContext
+                      autoScroll={scroll}
                       sensors={sensors}
                       onDragEnd={handleDragEnd}
                       collisionDetection={closestCorners}
