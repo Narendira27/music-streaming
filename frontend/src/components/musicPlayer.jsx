@@ -559,7 +559,7 @@ export default function MusicPlayer({ hiddenLink }) {
                       autoScroll={scroll}
                       sensors={sensors}
                       onDragEnd={handleDragEnd}
-                      collisionDetection={closestCorners}
+                     collisionDetection={rectIntersection}
                     >
                       <ManageQueue
                         playingQueue={playingQueue}
