@@ -44,13 +44,13 @@ import { toast } from "sonner";
 import { API_URL } from "@/lib/url";
 import { useNavigate } from "react-router-dom";
 import {
-  rectIntersection,
   DndContext,
   KeyboardSensor,
   PointerSensor,
   TouchSensor,
   useSensor,
   useSensors,
+  closestCorners,
 } from "@dnd-kit/core";
 import ManageQueue from "@/components/queueList";
 import { arrayMove, sortableKeyboardCoordinates } from "@dnd-kit/sortable";
@@ -556,10 +556,10 @@ export default function MusicPlayer({ hiddenLink }) {
                       </p>
                     )}
                     <DndContext
-                      autoScroll={scroll}
+                      autoScroll={true}
                       sensors={sensors}
                       onDragEnd={handleDragEnd}
-                     collisionDetection={rectIntersection}
+                      collisionDetection={closestCorners}
                     >
                       <ManageQueue
                         playingQueue={playingQueue}
