@@ -30,5 +30,6 @@ model Song {
   filePath String
   fileName String
   user User @relation(fields: [userId],references: [id])
+  songType String @default("youtube") // default || youtube
   userId String 
 }

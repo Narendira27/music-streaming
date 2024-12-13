@@ -1,13 +1,11 @@
 import express from "express";
 import { Request, Response } from "express";
 import { PrismaClient } from "@prisma/client";
-import path from "path";
-import fs from "fs";
 
+import searchSongs from "../../utils/getSearchResults";
+import AddSongLogic from "../../route-logic/addSongLogic";
 import validateSchema from "../../utils/validateSchema";
-import { songBodySchema } from "../../schemas/userSchema";
-import { generateFileName } from "../../utils/commonUtlis";
-import downloadAudio, { getAudioDuration } from "../../utils/downloadAudioV1";
+import { UpdateSongAudioSchema } from "../../schemas/updateSongAudioSchema";
 
 const prisma = new PrismaClient();
 
@@ -33,6 +31,7 @@ userRoutes.get("/song", async (req: CustomRequest, res: Response) => {
         filePath: false,
         userId: false,
         fileName: true,
+        songType: true,
       },
     });
     res.json({ data: [...result] });
@@ -42,57 +41,36 @@ userRoutes.get("/song", async (req: CustomRequest, res: Response) => {
 });
 
 userRoutes.post("/song", async (req: CustomRequest, res: Response) => {
-  const validateResult = validateSchema(songBodySchema, req.body);
-  if (validateResult !== "ok") {
-    res.status(400).json({ msg: validateResult });
+  const { type } = req.query;
+
+  // check query params
+  if (type === undefined || type === null) {
+    res.status(400).json({ msg: "type required" });
     return;
   }
 
+  const userType = String(type);
+
+  // check req.id
   if (req.id === undefined || !req.id) {
     res.status(400).json({ msg: "authorization failed" });
     return;
   }
 
-  const fileName = generateFileName(req.body.youtubeUrl);
-  const DOWNLOAD_DIR = path.resolve(__dirname, "../../../downloads");
-  const filePath = path.join(DOWNLOAD_DIR, fileName);
-
-  let downloadResult;
-
-  let duration: number;
-
-  if (fs.existsSync(filePath)) {
-    try {
-      duration = await getAudioDuration(filePath);
-    } catch (err) {
-      res.status(400).json({ msg: "Failed to get audio duration" });
-      return;
-    }
-  } else {
-    downloadResult = await downloadAudio(req.body.youtubeUrl, filePath);
-    if (downloadResult.success === false) {
-      res.status(400).json({ msg: downloadResult.error });
-      return;
-    }
-
-    if (downloadResult.duration === undefined) {
-      res
-        .status(400)
-        .json({ msg: "cannot determine the duration of the song" });
-      return;
-    }
-
-    duration = downloadResult.duration;
-  }
-
   try {
+    const { duration, filePath, fileName, title, url } = await AddSongLogic(
+      req.body,
+      userType
+    );
+
     await prisma.song.create({
       data: {
-        title: req.body.title,
-        youtubeUrl: req.body.youtubeUrl,
+        title: title,
+        youtubeUrl: url,
         duration: duration.toString(),
         filePath: filePath,
         fileName: fileName,
+        songType: userType,
         userId: req.id,
       },
     });
@@ -105,93 +83,36 @@ userRoutes.post("/song", async (req: CustomRequest, res: Response) => {
 userRoutes.put("/song", async (req: CustomRequest, res: Response) => {
   const { id } = req.query;
 
-  const validateResult = validateSchema(songBodySchema, req.body);
-  if (validateResult !== "ok") {
-    res.status(400).json({ msg: validateResult });
+  // check query params
+  if (!id || id === undefined) {
+    res.status(400).json({ msg: "required query parameter not found" });
     return;
   }
-
-  if (!id || id === undefined) {
-    res.status(400).json({ msg: "id is required" });
+  // check req.id
+  if (req.id === undefined || !req.id) {
+    res.status(400).json({ msg: "authorization failed" });
     return;
   }
 
   const UpdateId = String(id);
 
-  let getSongDetails;
+  const validateResult = validateSchema(UpdateSongAudioSchema, req.body);
 
-  try {
-    getSongDetails = await prisma.song.findFirst({
-      where: { id: UpdateId, userId: req.id },
-    });
-    if (!getSongDetails) {
-      throw console.error("song not found");
-    }
-  } catch (e) {
-    res.status(400).json({ msg: e });
+  if (validateResult !== "ok") {
+    res.status(400).json({ msg: validateResult });
     return;
   }
 
-  const fileName = generateFileName(req.body.youtubeUrl);
-  const DOWNLOAD_DIR = path.resolve(__dirname, "../../../downloads");
-  const filePath = path.join(DOWNLOAD_DIR, fileName);
-
-  if (getSongDetails.youtubeUrl === req.body.youtubeUrl) {
-    try {
-      await prisma.song.update({
-        where: { userId: req.id, id: UpdateId },
-        data: { title: req.body.title },
-      });
-      res.json({ msg: "updated successfully" });
-      return;
-    } catch (e) {
-      res.json({ msg: e });
-      return;
-    }
-  } else {
-    let downloadResult;
-
-    let duration: number;
-
-    if (fs.existsSync(filePath)) {
-      try {
-        duration = await getAudioDuration(filePath);
-      } catch (err) {
-        res.status(400).json({ msg: "Failed to get audio duration" });
-        return;
-      }
-    } else {
-      downloadResult = await downloadAudio(req.body.youtubeUrl, filePath);
-      if (downloadResult.success === false) {
-        res.status(400).json({ msg: downloadResult.error });
-        return;
-      }
-
-      if (downloadResult.duration === undefined) {
-        res
-          .status(400)
-          .json({ msg: "cannot determine the duration of the song" });
-        return;
-      }
-
-      duration = downloadResult.duration;
-    }
-    try {
-      await prisma.song.update({
-        where: { id: UpdateId, userId: req.id },
-        data: {
-          title: req.body.title,
-          youtubeUrl: req.body.youtubeUrl,
-          duration: duration.toString(),
-          filePath: filePath,
-          fileName: fileName,
-          userId: req.id,
-        },
-      });
-      res.json({ msg: "Song Updated Successfully" });
-    } catch (e) {
-      res.status(400).json({ msg: e });
-    }
+  try {
+    await prisma.song.update({
+      where: { userId: req.id, id: UpdateId },
+      data: { title: req.body.title },
+    });
+    res.json({ msg: "updated successfully" });
+    return;
+  } catch (e) {
+    res.json({ msg: e });
+    return;
   }
 });
 
@@ -209,6 +130,27 @@ userRoutes.delete("/song", async (req: CustomRequest, res: Response) => {
     res.json({ msg: "deleted successfully" });
   } catch (e) {
     res.status(400).json({ msg: e });
+  }
+});
+
+userRoutes.get("/search-song", async (req: CustomRequest, res: Response) => {
+  const { name } = req.query;
+  if (!name || name === undefined) {
+    res.status(400).json({ msg: "id is required" });
+    return;
+  }
+  const value = String(name);
+
+  try {
+    if (value.length <= 2) {
+      throw new Error("The search query must be longer than 4 characters.");
+    }
+    const songListResponse = await searchSongs(value);
+
+    res.json(songListResponse);
+  } catch (e) {
+    res.status(400).json({ msg: e });
+    console.log(e);
   }
 });
 

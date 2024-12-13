@@ -3,7 +3,7 @@ import { PrismaClient } from "@prisma/client";
 
 import { loginBodySchema, registerBodySchema } from "../../schemas/authSchema";
 import validateSchema from "../../utils/validateSchema";
-import { compareHash, hashPassword, decodeJwt } from "../../utils/commonUtlis";
+import { compareHash, hashPassword, decodeJwt } from "../../utils/commonUtils";
 import createJwt from "../../utils/createJwt";
 import { sendEmail, verifyEmail } from "../../utils/emailUtils";
 import { JwtPayload } from "jsonwebtoken";
