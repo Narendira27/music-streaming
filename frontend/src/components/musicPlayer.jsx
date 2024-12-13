@@ -109,7 +109,8 @@ export default function MusicPlayer({ hiddenLink }) {
 
     if (searchQuery.length > 2) {
       fetchResults();
-    } else {
+    }
+    if (searchQuery.length < 2) {
       setSearchSuggestions([]);
     }
   }, [searchQuery]);
@@ -496,6 +497,7 @@ export default function MusicPlayer({ hiddenLink }) {
     });
     setDeleteDetails("");
     setIsDialogOpenDelete(false);
+    navigate(0);
   };
 
   const getPosition = (id) => playingQueue.findIndex((item) => item.id === id);
