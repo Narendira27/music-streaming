@@ -35,6 +35,7 @@ import {
   Shuffle,
   Plus,
   ListMusic,
+  Search,
 } from "lucide-react";
 
 import axios from "axios";
@@ -55,6 +56,9 @@ import {
 import ManageQueue from "@/components/queueList";
 import { arrayMove, sortableKeyboardCoordinates } from "@dnd-kit/sortable";
 import { v4 as uuidv4 } from "uuid";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "./ui/tabs";
+
+import { ScrollArea } from "./ui/scroll-area";
 
 export default function MusicPlayer({ hiddenLink }) {
   const [isPlaying, setIsPlaying] = useState(false);
@@ -73,6 +77,7 @@ export default function MusicPlayer({ hiddenLink }) {
   const [currentTime, setCurrentTime] = useState(0);
 
   const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [addSongTab, setAddSongTab] = useState("search");
   const [isDialogOpenUpdate, setIsDialogOpenUpdate] = useState(false);
   const [isDialogOpenDelete, setIsDialogOpenDelete] = useState(false);
 
@@ -83,9 +88,31 @@ export default function MusicPlayer({ hiddenLink }) {
   const [updateDetails, setUpdateDetails] = useState({ name: "", url: "" });
   const [deleteDetails, setDeleteDetails] = useState("");
 
+  const [searchQuery, setSearchQuery] = useState("");
+  const [searchSuggestions, setSearchSuggestions] = useState([]);
+
   const [audio] = useState(new Audio());
 
   const navigate = useNavigate();
+
+  useEffect(() => {
+    const authToken = Cookies.get("auth-cookie");
+    const fetchResults = async () => {
+      const fetchSongs = await axios.get(
+        API_URL + "/user/search-song/?name=" + searchQuery,
+        {
+          headers: { Authorization: "Bearer " + authToken },
+        }
+      );
+      setSearchSuggestions(fetchSongs.data);
+    };
+
+    if (searchQuery.length > 2) {
+      fetchResults();
+    } else {
+      setSearchSuggestions([]);
+    }
+  }, [searchQuery]);
 
   useEffect(() => {
     repeatStatusRef.current = repeatStatus;
@@ -277,7 +304,7 @@ export default function MusicPlayer({ hiddenLink }) {
     if (newSong.name.length > 2 && newSong.url) {
       const authToken = Cookies.get("auth-cookie");
       const responseAddSong = axios.post(
-        API_URL + "/user/song",
+        API_URL + "/user/song?type=youtube",
         {
           title: newSong.name,
           youtubeUrl: newSong.url,
@@ -425,7 +452,6 @@ export default function MusicPlayer({ hiddenLink }) {
         API_URL + "/user/song?id=" + updateDetails.id,
         {
           title: updateDetails.name,
-          youtubeUrl: updateDetails.url,
         },
         {
           headers: {
@@ -447,6 +473,7 @@ export default function MusicPlayer({ hiddenLink }) {
       setIsDialogOpenUpdate(false);
     }
   };
+
   const handleDeleteSong = () => {
     const authToken = Cookies.get("auth-cookie");
     const responseAddSong = axios.delete(
@@ -503,6 +530,35 @@ export default function MusicPlayer({ hiddenLink }) {
 
     if (playingQueue.length >= 1)
       setPlayingQueue((prev) => [...prev, modifiedEach]);
+  };
+
+  const handleAddSongAudio = (song) => {
+    const authToken = Cookies.get("auth-cookie");
+    const responseAddSong = axios.post(
+      API_URL + "/user/song?type=audio",
+      {
+        id: song.id,
+        title: song.song_name,
+        url: song.download_link,
+      },
+      {
+        headers: {
+          Authorization: "Bearer " + authToken,
+        },
+      }
+    );
+    toast.promise(responseAddSong, {
+      loading: "AddingSong... This might take some time",
+      success: () => {
+        fetchSongs();
+        return `Song has been added`;
+      },
+      error: (res) => {
+        return `Error : ${res.response.data.msg}`;
+      },
+    });
+    setNewSong({ name: "", url: "" });
+    setIsDialogOpen(false);
   };
 
   return (
@@ -703,48 +759,115 @@ export default function MusicPlayer({ hiddenLink }) {
           <DialogContent className="sm:max-w-[425px]">
             <DialogHeader>
               <DialogTitle className="flex justify-between items-center text-foreground">
-                Add New Song
+                Add Song
               </DialogTitle>
             </DialogHeader>
-            <div className="grid gap-4 py-4">
-              <div className="grid gap-2">
-                <label
-                  htmlFor="name"
-                  className="text-sm font-medium text-foreground"
-                >
-                  Song Name
-                </label>
-                <Input
-                  id="name"
-                  value={newSong.name}
-                  onChange={(e) =>
-                    setNewSong({ ...newSong, name: e.target.value })
-                  }
-                  placeholder="Enter song name"
-                  className="text-foreground placeholder:text-muted-foreground"
-                />
-              </div>
-              <div className="grid gap-2">
-                <label
-                  htmlFor="url"
-                  className="text-sm font-medium text-foreground"
-                >
-                  YouTube URL
-                </label>
-                <Input
-                  id="url"
-                  value={newSong.url}
-                  onChange={(e) =>
-                    setNewSong({ ...newSong, url: e.target.value })
-                  }
-                  placeholder="Enter YouTube URL"
-                  className="text-foreground placeholder:text-muted-foreground"
-                />
-              </div>
-            </div>
-            <DialogFooter className="flex justify-between">
-              <Button onClick={handleAddSong}>Add Song</Button>
-            </DialogFooter>
+            <Tabs
+              value={addSongTab}
+              onValueChange={setAddSongTab}
+              className="w-full"
+            >
+              <TabsList className="grid w-full grid-cols-2">
+                <TabsTrigger value="search">Search</TabsTrigger>
+                <TabsTrigger value="youtube">YouTube Link</TabsTrigger>
+              </TabsList>
+              <TabsContent value="search">
+                <div className="space-y-4">
+                  <div className="relative">
+                    <div className="flex">
+                      <Input
+                        type="text"
+                        value={searchQuery}
+                        onChange={(e) => setSearchQuery(e.target.value)}
+                        placeholder="Search for a song/movie name"
+                        className="w-full rounded-r-none"
+                      />
+                      <Button
+                        type="submit"
+                        className="rounded-l-none bg-primary hover:bg-primary/90"
+                      >
+                        <Search className="h-4 w-4" />
+                        <span className="sr-only">Search</span>
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+                <ScrollArea className="mt-4 ">
+                  <div className=" space-y-4 max-h-56">
+                    {searchSuggestions.length > 0
+                      ? searchSuggestions.map((song) => (
+                          <div
+                            key={song.id}
+                            className="flex justify-between items-center p-2 bg-gray-100 rounded-md"
+                          >
+                            <span className="font-medium text-black">
+                              {` ${song.song_name} - (${song.album}(${song.album_year})) `}
+                            </span>
+                            <Button
+                              onClick={() => handleAddSongAudio(song)}
+                              variant="outline"
+                              size="sm"
+                            >
+                              Add
+                            </Button>
+                          </div>
+                        ))
+                      : searchQuery &&
+                        searchQuery.length > 2 && (
+                          <div className="text-center space-y-2 p-4 bg-gray-100 rounded-md">
+                            <p className="text-gray-600">Song not found</p>
+                            <Button
+                              onClick={() => setAddSongTab("youtube")}
+                              variant="outline"
+                            >
+                              Add using YouTube link
+                            </Button>
+                          </div>
+                        )}
+                  </div>
+                </ScrollArea>
+              </TabsContent>
+              <TabsContent value="youtube">
+                <div className="grid gap-4 py-4">
+                  <div className="grid gap-2">
+                    <label
+                      htmlFor="name"
+                      className="text-sm font-medium text-foreground"
+                    >
+                      Song Name
+                    </label>
+                    <Input
+                      id="name"
+                      value={newSong.name}
+                      onChange={(e) =>
+                        setNewSong({ ...newSong, name: e.target.value })
+                      }
+                      placeholder="Enter song name"
+                      className="text-foreground placeholder:text-muted-foreground"
+                    />
+                  </div>
+                  <div className="grid gap-2">
+                    <label
+                      htmlFor="url"
+                      className="text-sm font-medium text-foreground"
+                    >
+                      YouTube URL
+                    </label>
+                    <Input
+                      id="url"
+                      value={newSong.url}
+                      onChange={(e) =>
+                        setNewSong({ ...newSong, url: e.target.value })
+                      }
+                      placeholder="Enter YouTube URL"
+                      className="text-foreground placeholder:text-muted-foreground"
+                    />
+                  </div>
+                  <Button onClick={handleAddSong}>Add Song</Button>
+                </div>
+              </TabsContent>
+            </Tabs>
+            <DialogFooter className="flex justify-between"></DialogFooter>
           </DialogContent>
         </Dialog>
 
@@ -752,7 +875,7 @@ export default function MusicPlayer({ hiddenLink }) {
           <DialogContent className="sm:max-w-[425px]">
             <DialogHeader>
               <DialogTitle className="flex justify-between items-center text-foreground">
-                Update
+                Edit Song
               </DialogTitle>
             </DialogHeader>
             <div className="grid gap-4 py-4">
@@ -773,26 +896,6 @@ export default function MusicPlayer({ hiddenLink }) {
                     }))
                   }
                   placeholder="Enter song name"
-                  className="text-foreground placeholder:text-muted-foreground"
-                />
-              </div>
-              <div className="grid gap-2">
-                <label
-                  htmlFor="url"
-                  className="text-sm font-medium text-foreground"
-                >
-                  YouTube URL
-                </label>
-                <Input
-                  id="url"
-                  value={updateDetails.url}
-                  onChange={(e) =>
-                    setUpdateDetails((each) => ({
-                      ...each,
-                      url: e.target.value,
-                    }))
-                  }
-                  placeholder="Enter YouTube URL"
                   className="text-foreground placeholder:text-muted-foreground"
                 />
               </div>
