@@ -91,9 +91,22 @@ export default function MusicPlayer({ hiddenLink }) {
   const [searchQuery, setSearchQuery] = useState("");
   const [searchSuggestions, setSearchSuggestions] = useState([]);
 
+  const [enableAdminButton, setEnableAdminButton] = useState(false);
+
   const [audio] = useState(new Audio());
 
   const navigate = useNavigate();
+
+  useEffect(() => {
+    const authToken = Cookies.get("auth-cookie");
+    axios
+      .get(API_URL + "/admin/me", {
+        headers: { Authorization: "Bearer " + authToken },
+      })
+      .then(() => {
+        setEnableAdminButton(true);
+      });
+  }, []);
 
   useEffect(() => {
     const authToken = Cookies.get("auth-cookie");
@@ -577,6 +590,9 @@ export default function MusicPlayer({ hiddenLink }) {
                 <Plus className="h-4 w-4 mr-2" />
                 Add Songs
               </Button>
+              {enableAdminButton ? (
+                <Button onClick={() => navigate("/admin")}>Admin Page</Button>
+              ) : null}
               <Button onClick={handleLogout}>Logout</Button>
             </div>
           </div>
