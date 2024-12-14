@@ -46,4 +46,16 @@ const verifyEmail = async (token: string) => {
   }
 };
 
-export { sendEmail, verifyEmail };
+const serviceEmail = async (token: string) => {
+  try {
+    await axios.post(emailUrl + "/service-status", {
+      headers: { Authorization: "Bearer " + emailToken },
+    });
+    return "ok";
+  } catch (e) {
+    console.log(e);
+    return "error";
+  }
+};
+
+export { sendEmail, verifyEmail, serviceEmail };

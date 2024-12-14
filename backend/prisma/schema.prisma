@@ -20,6 +20,7 @@ model User {
   verified Boolean @default(false)
   password String 
   songs Song[]
+  isAdmin Boolean @default(false)
 } 
 
 model Song {
@@ -32,4 +33,9 @@ model Song {
   user User @relation(fields: [userId],references: [id])
   songType String @default("youtube") // default || youtube
   userId String 
+}
+
+model YtUrl{
+  id String @unique 
+  url String
 }

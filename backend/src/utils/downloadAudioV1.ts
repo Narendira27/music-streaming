@@ -2,6 +2,20 @@ import axios from "axios";
 import fs from "fs";
 import ffmpeg from "fluent-ffmpeg";
 import FormData from "form-data";
+import { PrismaClient } from "@prisma/client";
+const prisma = new PrismaClient();
+
+const getDbURL = async (): Promise<string> => {
+  try {
+    const res = await prisma.ytUrl.findFirst({ where: { id: "1" } });
+    if (res === undefined || res === null) {
+      throw new Error("Error");
+    }
+    return res.url;
+  } catch {
+    throw new Error("Cannot get url");
+  }
+};
 
 function getAudioDuration(filePath: string): Promise<number> {
   return new Promise((resolve, reject) => {
@@ -24,7 +38,7 @@ function extractYouTubeID(url: string) {
   return match ? match[1] : "UnSupported YT URL";
 }
 
-const getDownloadURL = async (ytid: string) => {
+const getDownloadURL = async (dbYtURL: string, ytid: string) => {
   const data = new FormData();
   data.append("videoid", ytid);
   data.append("downtype", "mp3");
@@ -33,16 +47,16 @@ const getDownloadURL = async (ytid: string) => {
   const config = {
     method: "post",
     maxBodyLength: Infinity,
-    url: "https://hbhbj.store/oajax.php", // Updated URL   /  hbhbj.store
+    url: `https://${dbYtURL}/oajax.php`, // Updated URL
     headers: {
       accept: "*/*",
       "accept-language": "en-US,en;q=0.9",
       "cache-control": "no-cache",
       "content-type": "application/x-www-form-urlencoded; charset=UTF-8",
-      origin: "https://hbhbj.store", // Updated Origin
+      origin: `https://${dbYtURL}`, // Updated Origin
       pragma: "no-cache",
       priority: "u=1, i",
-      referer: `https://hbhbj.store/?videoId=${ytid}`, // Updated Referer
+      referer: `https://${dbYtURL}?videoId=${ytid}`, // Updated Referer
       "sec-ch-ua": '"Brave";v="131", "Chromium";v="131", "Not_A Brand";v="24"',
       "sec-ch-ua-mobile": "?0",
       "sec-ch-ua-platform": '"Linux"',
@@ -66,7 +80,11 @@ const getDownloadURL = async (ytid: string) => {
   }
 };
 
-function downloadAudioFile(url: string, filePath: string): Promise<string> {
+function downloadAudioFile(
+  dbYtURL: string,
+  url: string,
+  filePath: string
+): Promise<string> {
   return new Promise((resolve, reject) => {
     const config = {
       method: "get",
@@ -79,7 +97,7 @@ function downloadAudioFile(url: string, filePath: string): Promise<string> {
         "cache-control": "no-cache",
         pragma: "no-cache",
         priority: "u=0, i",
-        referer: "https://hbhbj.store/", // Provided referer
+        referer: `https://${dbYtURL}/`, // Provided referer
         "sec-ch-ua":
           '"Brave";v="131", "Chromium";v="131", "Not_A Brand";v="24"',
         "sec-ch-ua-mobile": "?0",
@@ -120,11 +138,12 @@ function downloadAudioFile(url: string, filePath: string): Promise<string> {
 
 const downloadYoutubeAudio = async (link: string, filepath: string) => {
   try {
+    const dbYtURL = await getDbURL();
     const ytId = extractYouTubeID(link);
     if (ytId === "UnSupported YT URL") {
       throw new Error("UnSupported YT URL");
     }
-    let downloadUrl = await getDownloadURL(ytId);
+    let downloadUrl = await getDownloadURL(dbYtURL, ytId);
     if (downloadUrl === undefined) {
       let RETRY_COUNT = 0;
       const MAX_RETRY = 5;
@@ -134,7 +153,7 @@ const downloadYoutubeAudio = async (link: string, filepath: string) => {
 
         await new Promise((resolve) => setTimeout(resolve, 200));
 
-        downloadUrl = await getDownloadURL(ytId);
+        downloadUrl = await getDownloadURL(dbYtURL, ytId);
 
         if (downloadUrl !== undefined) {
           console.log("Download URL retrieved successfully");
@@ -148,7 +167,7 @@ const downloadYoutubeAudio = async (link: string, filepath: string) => {
         }
       }
     }
-    await downloadAudioFile(downloadUrl, filepath);
+    await downloadAudioFile(dbYtURL, downloadUrl, filepath);
     const duration = await getAudioDuration(filepath);
     return {
       success: true,

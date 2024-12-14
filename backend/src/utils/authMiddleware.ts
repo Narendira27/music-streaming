@@ -1,8 +1,6 @@
 import { Request, Response, NextFunction } from "express";
 import jwt, { JwtPayload } from "jsonwebtoken";
-import dotenv from "dotenv";
 
-dotenv.config();
 const jwtPass = process.env.JWT_PASS;
 if (!jwtPass) {
   throw console.error("JWT PASSWORD NOT FOUND");

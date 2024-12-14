@@ -7,6 +7,13 @@ import { compareHash, hashPassword, decodeJwt } from "../../utils/commonUtils";
 import createJwt from "../../utils/createJwt";
 import { sendEmail, verifyEmail } from "../../utils/emailUtils";
 import { JwtPayload } from "jsonwebtoken";
+import { promoteAdminSchema } from "../../schemas/promoteAdminSchema";
+
+const masterPass = process.env.MASTER_PASS;
+
+if (!masterPass) {
+  throw console.error("MASTER PASSWORD NOT FOUND");
+}
 
 const prisma = new PrismaClient();
 
@@ -114,6 +121,32 @@ authRoutes.post("/resend", async (req, res) => {
     return;
   }
   res.status(200).json({ msg: "success" });
+});
+
+authRoutes.post("/promoteAdmin", async (req, res) => {
+  const validateResult = validateSchema(promoteAdminSchema, req.body);
+  if (validateResult !== "ok") {
+    res.status(400).json({ msg: validateResult });
+    return;
+  }
+  if (req.body.auth !== masterPass) {
+    res.status(400).json({ msg: "You are not authorized" });
+    return;
+  }
+
+  try {
+    await prisma.user.update({
+      where: { email: req.body.email },
+      data: { isAdmin: true },
+    });
+    res.status(200).json({ msg: "User Promoted to Admin" });
+  } catch (e: any) {
+    if (e.meta.cause === "Record to update not found.") {
+      res.status(400).json({ msg: "User not Found" });
+      return;
+    }
+    res.status(400).json({ msg: e.message });
+  }
 });
 
 export default authRoutes;
