@@ -36,6 +36,7 @@ import {
   Plus,
   ListMusic,
   Search,
+  AlignJustify,
 } from "lucide-react";
 
 import axios from "axios";
@@ -59,6 +60,7 @@ import { v4 as uuidv4 } from "uuid";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "./ui/tabs";
 
 import { ScrollArea } from "./ui/scroll-area";
+import { DropdownMenuSeparator } from "@radix-ui/react-dropdown-menu";
 
 export default function MusicPlayer({ hiddenLink }) {
   const [isPlaying, setIsPlaying] = useState(false);
@@ -586,14 +588,36 @@ export default function MusicPlayer({ hiddenLink }) {
             <div className="flex items-center gap-2">
               {/* <PipButton /> */}
               <ThemeToggle />
-              <Button onClick={() => setIsDialogOpen(true)}>
+              <Button
+                className="ml-2 mr-2"
+                onClick={() => setIsDialogOpen(true)}
+              >
                 <Plus className="h-4 w-4 mr-2" />
                 Add Songs
               </Button>
-              {enableAdminButton ? (
-                <Button onClick={() => navigate("/admin")}>Admin Page</Button>
-              ) : null}
-              <Button onClick={handleLogout}>Logout</Button>
+
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button>
+                    <AlignJustify />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent className="w-fit mt-1">
+                  <DropdownMenuItem className="p-2" onClick={handleLogout}>
+                    Logout
+                  </DropdownMenuItem>
+                  {enableAdminButton ? (
+                    <>
+                      <DropdownMenuItem
+                        className="p-2"
+                        onClick={() => navigate("/admin")}
+                      >
+                        Admin
+                      </DropdownMenuItem>
+                    </>
+                  ) : null}
+                </DropdownMenuContent>
+              </DropdownMenu>
             </div>
           </div>
         </div>
