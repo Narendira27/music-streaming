@@ -603,9 +603,6 @@ export default function MusicPlayer({ hiddenLink }) {
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent className="w-fit mt-1">
-                  <DropdownMenuItem className="p-2" onClick={handleLogout}>
-                    Logout
-                  </DropdownMenuItem>
                   {enableAdminButton ? (
                     <>
                       <DropdownMenuItem
@@ -616,6 +613,9 @@ export default function MusicPlayer({ hiddenLink }) {
                       </DropdownMenuItem>
                     </>
                   ) : null}
+                  <DropdownMenuItem className="p-2" onClick={handleLogout}>
+                    Logout
+                  </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
             </div>
