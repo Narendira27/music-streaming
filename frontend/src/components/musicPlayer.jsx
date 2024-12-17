@@ -584,7 +584,7 @@ export default function MusicPlayer({ hiddenLink }) {
         {/* Header */}
         <div className="sticky top-0 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 z-10 border-b">
           <div className="flex justify-between items-center p-4">
-            <h1 className="text-xl font-bold">Notify</h1>
+            <h1 className="text-xl font-bold">Nottify</h1>
             <div className="flex items-center gap-2">
               {/* <PipButton /> */}
               <ThemeToggle />
