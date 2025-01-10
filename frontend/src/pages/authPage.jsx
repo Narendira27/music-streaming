@@ -166,7 +166,7 @@ export default function AuthPage() {
                     }}
                   />
                 </div>
-                <Button onClick={onClickLogin} className="w-full">
+                <Button onClick={onClickLogin} className="w-full h-full">
                   Login
                 </Button>
               </div>
@@ -216,7 +216,7 @@ export default function AuthPage() {
                     value={registerInfo.password}
                   />
                 </div>
-                <Button onClick={onClickRegister} className="w-full">
+                <Button onClick={onClickRegister} className="w-full  h-full">
                   Sign Up
                 </Button>
               </div>

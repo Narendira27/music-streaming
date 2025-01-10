@@ -60,7 +60,7 @@ import { v4 as uuidv4 } from "uuid";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "./ui/tabs";
 
 import { ScrollArea } from "./ui/scroll-area";
-import { DropdownMenuSeparator } from "@radix-ui/react-dropdown-menu";
+import { Checkbox } from "./ui/checkbox";
 
 export default function MusicPlayer({ hiddenLink }) {
   const [isPlaying, setIsPlaying] = useState(false);
@@ -79,6 +79,7 @@ export default function MusicPlayer({ hiddenLink }) {
   const [currentTime, setCurrentTime] = useState(0);
 
   const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [dialogPreference, setDialogPreference] = useState(true);
   const [addSongTab, setAddSongTab] = useState("search");
   const [isDialogOpenUpdate, setIsDialogOpenUpdate] = useState(false);
   const [isDialogOpenDelete, setIsDialogOpenDelete] = useState(false);
@@ -168,6 +169,20 @@ export default function MusicPlayer({ hiddenLink }) {
   useEffect(() => {
     setCurrentSong({ ...playingQueue[currentSongIndex] });
   }, [currentSongIndex]);
+
+  useEffect(() => {
+    const handleKeyDown = (event) => {
+      if (event.code === "Space") {
+        event.preventDefault();
+        handlePlayPause();
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => {
+      window.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [isPlaying]);
 
   useEffect(() => {
     if ("mediaSession" in navigator && currentSong !== undefined) {
@@ -334,6 +349,7 @@ export default function MusicPlayer({ hiddenLink }) {
       toast.promise(responseAddSong, {
         loading: "AddingSong... This might take some time",
         success: () => {
+          setNewSong({ name: "", url: "" });
           fetchSongs();
           return `Song has been added`;
         },
@@ -341,8 +357,7 @@ export default function MusicPlayer({ hiddenLink }) {
           return `Error : ${res.response.data.msg}`;
         },
       });
-      setNewSong({ name: "", url: "" });
-      setIsDialogOpen(false);
+      if (dialogPreference === true) setIsDialogOpen(false);
     }
   };
 
@@ -500,19 +515,20 @@ export default function MusicPlayer({ hiddenLink }) {
         },
       }
     );
+
     toast.promise(responseAddSong, {
       loading: "Deleting...",
       success: () => {
         fetchSongs();
+        setIsDialogOpenDelete(false);
+        setDeleteDetails("");
+
         return `Song has been Deleted`;
       },
       error: (res) => {
         return `Error : ${res.response.data.msg}`;
       },
     });
-    setDeleteDetails("");
-    setIsDialogOpenDelete(false);
-    navigate(0);
   };
 
   const getPosition = (id) => playingQueue.findIndex((item) => item.id === id);
@@ -574,8 +590,10 @@ export default function MusicPlayer({ hiddenLink }) {
         return `Error : ${res.response.data.msg}`;
       },
     });
-    setNewSong({ name: "", url: "" });
-    setIsDialogOpen(false);
+    if (dialogPreference === true) {
+      setIsDialogOpen(false);
+      setSearchQuery("");
+    }
   };
 
   return (
@@ -745,7 +763,7 @@ export default function MusicPlayer({ hiddenLink }) {
                               {convertSecToMinSec(parseFloat(song.duration))}
                             </TableCell>
                             <TableCell>
-                              <DropdownMenu>
+                              <DropdownMenu modal={false}>
                                 <DropdownMenuTrigger asChild>
                                   <Button
                                     variant="ghost"
@@ -868,6 +886,20 @@ export default function MusicPlayer({ hiddenLink }) {
                         )}
                   </div>
                 </ScrollArea>
+                <div className="flex w-full items-center mt-4 ">
+                  <Checkbox
+                    checked={dialogPreference}
+                    onCheckedChange={(val) => setDialogPreference(val)}
+                    id="onAddSong"
+                  />
+
+                  <label
+                    htmlFor="onAddSong"
+                    className="text-sm font-medium ml-4"
+                  >
+                    Close window when the Add button is clicked
+                  </label>
+                </div>
               </TabsContent>
               <TabsContent value="youtube">
                 <div className="grid gap-4 py-4">
@@ -906,6 +938,20 @@ export default function MusicPlayer({ hiddenLink }) {
                     />
                   </div>
                   <Button onClick={handleAddSong}>Add Song</Button>
+                </div>
+                <div className="flex w-full items-center mt-2 ">
+                  <Checkbox
+                    checked={dialogPreference}
+                    onCheckedChange={(val) => setDialogPreference(val)}
+                    id="onAddSong"
+                  />
+
+                  <label
+                    htmlFor="onAddSong"
+                    className="text-sm font-medium ml-4"
+                  >
+                    Close window when the Add Song button is clicked
+                  </label>
                 </div>
               </TabsContent>
             </Tabs>
