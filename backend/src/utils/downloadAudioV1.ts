@@ -3,9 +3,11 @@ import fs from "fs";
 import ffmpeg from "fluent-ffmpeg";
 import FormData from "form-data";
 import { PrismaClient } from "@prisma/client";
+import qs from "qs"
+
 const prisma = new PrismaClient();
 
-const getDbURL = async (): Promise<string> => {
+const getDbURL = async ()=> {
   try {
     const res = await prisma.ytUrl.findFirst({ where: { id: "1" } });
     if (res === undefined || res === null) {
@@ -31,44 +33,72 @@ function getAudioDuration(filePath: string): Promise<number> {
   });
 }
 
-function extractYouTubeID(url: string) {
-  const regex =
-    /(?:https?:\/\/)?(?:www\.)?(?:youtube\.com\/(?:[^\/\n\s]+\/\S+\/|(?:v|e(?:mbed)?)\/|\S*?[?&]v=)|youtu\.be\/)([a-zA-Z0-9_-]{11})/;
-  const match = url.match(regex);
-  return match ? match[1] : "UnSupported YT URL";
+const getKey =  async () => {
+  
+  let config = {
+    method: 'get',
+    maxBodyLength: Infinity, 
+    url: 'https://api.mp3youtube.cc/v2/sanity/key',
+    headers: { 
+      'accept': '*/*', 
+      'accept-language': 'en-US,en;q=0.9', 
+      'content-type': 'application/json', 
+      'if-none-match': 'W/"7e-KvPCs739rtXJfVSWGh9Q6jNmq7E-gzip"', 
+      'origin': 'https://iframe.y2meta-uk.com', 
+      'priority': 'u=1, i', 
+      'referer': 'https://iframe.y2meta-uk.com/', 
+      'sec-ch-ua': '"Brave";v="131", "Chromium";v="131", "Not_A Brand";v="24"', 
+      'sec-ch-ua-mobile': '?0', 
+      'sec-ch-ua-platform': '"Linux"', 
+      'sec-fetch-dest': 'empty', 
+      'sec-fetch-mode': 'cors', 
+      'sec-fetch-site': 'cross-site', 
+      'sec-gpc': '1', 
+      'user-agent': 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36'
+    }
+  };
+  try{
+    const response = await axios.request(config)
+    const parsedValue = JSON.parse(JSON.stringify(response.data)) 
+    return parsedValue.key
+  }
+  catch(e){
+    throw new Error ("Error while Fetching Key")
+  }
+
 }
 
-const getDownloadURL = async (dbYtURL: string, ytid: string) => {
-  const data = new FormData();
-  data.append("videoid", ytid);
-  data.append("downtype", "mp3");
-  data.append("vquality", "320");
+const getDownloadURL = async (dbYtURL: string, link: string,key:string) => {
+  let data = qs.stringify({
+    'link': link,
+    'format': 'mp3',
+    'audioBitrate': '320',
+    'videoQuality': '720',
+    'vCodec': 'h264' 
+  });
 
-  const config = {
-    method: "post",
+  let config = {
+    method: 'post',
     maxBodyLength: Infinity,
-    url: `https://${dbYtURL}/oajax.php`, // Updated URL
-    headers: {
-      accept: "*/*",
-      "accept-language": "en-US,en;q=0.9",
-      "cache-control": "no-cache",
-      "content-type": "application/x-www-form-urlencoded; charset=UTF-8",
-      origin: `https://${dbYtURL}`, // Updated Origin
-      pragma: "no-cache",
-      priority: "u=1, i",
-      referer: `https://${dbYtURL}?videoId=${ytid}`, // Updated Referer
-      "sec-ch-ua": '"Brave";v="131", "Chromium";v="131", "Not_A Brand";v="24"',
-      "sec-ch-ua-mobile": "?0",
-      "sec-ch-ua-platform": '"Linux"',
-      "sec-fetch-dest": "empty",
-      "sec-fetch-mode": "cors",
-      "sec-fetch-site": "same-origin",
-      "sec-gpc": "1",
-      "user-agent":
-        "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36",
-      "x-requested-with": "XMLHttpRequest",
+    url: dbYtURL,
+    headers: { 
+      'accept': '*/*', 
+      'accept-language': 'en-US,en;q=0.9', 
+      'content-type': 'application/x-www-form-urlencoded', 
+      'key': key, 
+      'origin': 'https://iframe.y2meta-uk.com', 
+      'priority': 'u=1, i', 
+      'referer': 'https://iframe.y2meta-uk.com/', 
+      'sec-ch-ua': '"Brave";v="131", "Chromium";v="131", "Not_A Brand";v="24"', 
+      'sec-ch-ua-mobile': '?0', 
+      'sec-ch-ua-platform': '"Linux"', 
+      'sec-fetch-dest': 'empty', 
+      'sec-fetch-mode': 'cors', 
+      'sec-fetch-site': 'cross-site', 
+      'sec-gpc': '1', 
+      'user-agent': 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36'
     },
-    data: data, // FormData is directly passed as data
+    data : data
   };
 
   try {
@@ -81,7 +111,6 @@ const getDownloadURL = async (dbYtURL: string, ytid: string) => {
 };
 
 function downloadAudioFile(
-  dbYtURL: string,
   url: string,
   filePath: string
 ): Promise<string> {
@@ -89,7 +118,7 @@ function downloadAudioFile(
     const config = {
       method: "get",
       maxBodyLength: Infinity,
-      url: url, // Provided URL
+      url: url, 
       headers: {
         accept:
           "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8",
@@ -97,7 +126,7 @@ function downloadAudioFile(
         "cache-control": "no-cache",
         pragma: "no-cache",
         priority: "u=0, i",
-        referer: `https://${dbYtURL}/`, // Provided referer
+        referer: `https://iframe.y2meta-uk.com/`, // Provided referer
         "sec-ch-ua":
           '"Brave";v="131", "Chromium";v="131", "Not_A Brand";v="24"',
         "sec-ch-ua-mobile": "?0",
@@ -139,11 +168,12 @@ function downloadAudioFile(
 const downloadYoutubeAudio = async (link: string, filepath: string) => {
   try {
     const dbYtURL = await getDbURL();
-    const ytId = extractYouTubeID(link);
-    if (ytId === "UnSupported YT URL") {
-      throw new Error("UnSupported YT URL");
+    const key = await getKey()
+
+    if (key === undefined   ||  null) {
+      throw new Error("Key is undefined");
     }
-    let downloadUrl = await getDownloadURL(dbYtURL, ytId);
+    let downloadUrl = await getDownloadURL(dbYtURL,link,key);
     if (downloadUrl === undefined) {
       let RETRY_COUNT = 0;
       const MAX_RETRY = 5;
@@ -153,7 +183,7 @@ const downloadYoutubeAudio = async (link: string, filepath: string) => {
 
         await new Promise((resolve) => setTimeout(resolve, 200));
 
-        downloadUrl = await getDownloadURL(dbYtURL, ytId);
+        downloadUrl = await getDownloadURL(dbYtURL,link,key);
 
         if (downloadUrl !== undefined) {
           console.log("Download URL retrieved successfully");
@@ -167,7 +197,7 @@ const downloadYoutubeAudio = async (link: string, filepath: string) => {
         }
       }
     }
-    await downloadAudioFile(dbYtURL, downloadUrl, filepath);
+    await downloadAudioFile(downloadUrl, filepath);
     const duration = await getAudioDuration(filepath);
     return {
       success: true,
@@ -188,3 +218,16 @@ const downloadYoutubeAudio = async (link: string, filepath: string) => {
 export default downloadYoutubeAudio;
 
 export { getAudioDuration };
+
+
+
+
+
+
+
+// function extractYouTubeID(url: string) {
+//   const regex =
+//     /(?:https?:\/\/)?(?:www\.)?(?:youtube\.com\/(?:[^\/\n\s]+\/\S+\/|(?:v|e(?:mbed)?)\/|\S*?[?&]v=)|youtu\.be\/)([a-zA-Z0-9_-]{11})/;
+//   const match = url.match(regex);
+//   return match ? match[1] : "UnSupported YT URL";
+// }
