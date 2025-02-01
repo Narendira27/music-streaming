@@ -143,7 +143,7 @@ userRoutes.get("/search-song", async (req: CustomRequest, res: Response) => {
 
   try {
     if (value.length <= 2) {
-      throw new Error("The search query must be longer than 4 characters.");
+      throw new Error("The search query must be longer than 2 characters.");
     }
     const songListResponse = await searchSongs(value);
 

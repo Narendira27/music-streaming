@@ -35,7 +35,7 @@ const AdminPage = () => {
         toast.error("You are not authorized");
         navigate("/");
       });
-  }, []);
+  }, [navigate]);
   const onClickCheckStatus = () => {
     const authToken = Cookies.get("auth-cookie");
     const res = axios.get(API_URL + "/admin/checkDownloadStatus", {
@@ -48,7 +48,7 @@ const AdminPage = () => {
         setStatusType("ok");
         return `Working Fine`;
       },
-      error: (res) => {
+      error: () => {
         setStatus("Downloader is not working, update url to fix issue");
         setStatusType("fail");
         return `There is some issue with yt downloader`;
@@ -67,7 +67,7 @@ const AdminPage = () => {
       success: () => {
         return `Updated !!`;
       },
-      error: (res) => {
+      error: () => {
         return `Issue with Updating try again later`;
       },
     });
@@ -85,7 +85,40 @@ const AdminPage = () => {
           </CardDescription>
         </CardHeader>
       </Card>
-      <div className="grid gap-4 md:grid-cols-2">
+      <Card className="mt-4">
+        <CardHeader>
+          <CardTitle>Upload Audio</CardTitle>
+          <CardDescription>Upload audio file with song file</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="flex flex-col space-y-1.5">
+            <Label htmlFor="songName">Song Name</Label>
+            <Input
+              id="songName"
+              name="songName"
+              placeholder="Enter song name"
+              required
+            />
+          </div>
+          <div className="flex flex-col space-y-1.5 mt-2">
+            <Label htmlFor="audio">Audio File</Label>
+            <Input
+              id="audio"
+              name="audio"
+              type="file"
+              accept="audio/*"
+              required
+            />
+          </div>
+        </CardContent>
+        <CardFooter>
+          <Button className="w-full" onClick={onClickCheckStatus}>
+            Upload Audio
+          </Button>
+        </CardFooter>
+      </Card>
+
+      <div className="grid gap-4 md:grid-cols-2 mt-4">
         <Card>
           <CardHeader>
             <CardTitle>Update Download URL</CardTitle>
@@ -144,7 +177,7 @@ const AdminPage = () => {
             </Button>
           </CardFooter>
         </Card>
-        <Button className="w-full" onClick={() => navigate("/dashboard")}>
+        <Button className="w-full mt-4" onClick={() => navigate("/dashboard")}>
           Dashboard
         </Button>
       </div>
