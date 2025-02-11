@@ -823,11 +823,19 @@ export default function MusicPlayer() {
                     </TableHeader>
                     <TableBody>
                       {userResultSongs.map((song) => {
+                        const getPlayingArr = songs.filter(
+                          (each) => each.isPlaying === true
+                        );
+                        let playingId = 0;
+                        if (getPlayingArr.length > 0) {
+                          playingId = getPlayingArr[0].id;
+                        }
+
                         return (
                           <TableRow
                             key={song.id}
                             className={`hover:bg-muted/70 cursor-pointer ${
-                              song.isPlaying === true ? "bg-muted" : ""
+                              playingId === song.id ? "bg-muted" : ""
                             }`}
                             onClick={() => onClickPlaySong(song)}
                           >
