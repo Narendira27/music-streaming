@@ -18,24 +18,25 @@ model User {
   name String
   email String @unique
   verified Boolean @default(false)
-  password String 
+  password String
   songs Song[]
   isAdmin Boolean @default(false)
-} 
+}
 
 model Song {
   id String @default(uuid()) @unique
-  title String 
+  title String
   youtubeUrl String
   duration String
   filePath String
   fileName String
   user User @relation(fields: [userId],references: [id])
-  songType String @default("youtube") // default || youtube
-  userId String 
+  songType String @default("youtube")
+  userId String
+  @@unique([userId, fileName])
 }
 
 model YtUrl{
-  id String @unique 
+  id String @unique
   url String
 }
