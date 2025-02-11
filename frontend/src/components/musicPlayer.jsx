@@ -62,7 +62,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "./ui/tabs";
 import { ScrollArea } from "./ui/scroll-area";
 import { Checkbox } from "./ui/checkbox";
 
-export default function MusicPlayer({ hiddenLink }) {
+export default function MusicPlayer() {
   const [isPlaying, setIsPlaying] = useState(false);
 
   const [playingQueue, setPlayingQueue] = useState([]);
@@ -173,6 +173,14 @@ export default function MusicPlayer({ hiddenLink }) {
   useEffect(() => {
     const handleKeyDown = (event) => {
       if (event.code === "Space") {
+        if (
+          document.activeElement.tagName === "INPUT" ||
+          document.activeElement.tagName === "TEXTAREA" ||
+          document.activeElement.isContentEditable
+        ) {
+          return;
+        }
+
         event.preventDefault();
         handlePlayPause();
       }
@@ -197,6 +205,7 @@ export default function MusicPlayer({ hiddenLink }) {
     }
   }, [currentSongIndex, currentSong]);
 
+  //  handles the  playing songs
   useEffect(() => {
     if (audio !== null) audio.src = "";
 
@@ -300,11 +309,13 @@ export default function MusicPlayer({ hiddenLink }) {
     };
   }, [currentSong]);
 
+  //  volume control
   const handleVolumeChange = (value) => {
     setVolume(value);
     audio.volume = normalizeVolume(volume[0]);
   };
 
+  //  play and pause
   const handlePlayPause = () => {
     if (playingQueue.length > 0) {
       if (isPlaying) {
@@ -331,6 +342,7 @@ export default function MusicPlayer({ hiddenLink }) {
     toast.info("Playing");
   };
 
+  //  add song
   const handleAddSong = async () => {
     if (newSong.name.length > 2 && newSong.url) {
       const authToken = Cookies.get("auth-cookie");
@@ -382,6 +394,7 @@ export default function MusicPlayer({ hiddenLink }) {
     setSongs(updateArr);
     setIsPlaying(true);
     setPlayingQueue((prev) => [data, ...prev]);
+
     setCurrentSong(data);
   };
 
@@ -586,8 +599,8 @@ export default function MusicPlayer({ hiddenLink }) {
         fetchSongs();
         return `Song has been added`;
       },
-      error: (res) => {
-        return `Error : ${res.response.data.msg}`;
+      error: () => {
+        return `Error : Something Went Wrong`;
       },
     });
     if (dialogPreference === true) {
@@ -720,12 +733,12 @@ export default function MusicPlayer({ hiddenLink }) {
                   <Table>
                     <TableHeader className="sticky top-0 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 ">
                       <TableRow>
-                        <TableHead className="w-[40px]"></TableHead>
-
-                        <TableHead>Title</TableHead>
+                        <TableHead className="w-2/6 px-2 lg:px-8">
+                          Title
+                        </TableHead>
                         {document.documentElement.clientWidth > 1024 ? (
                           <TableHead>
-                            <div>Youtube URL</div>
+                            <div>Source Link</div>
                           </TableHead>
                         ) : null}
 
@@ -734,24 +747,16 @@ export default function MusicPlayer({ hiddenLink }) {
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {[...songs].map((song, index) => {
+                      {[...songs].map((song) => {
                         return (
-                          <TableRow key={song.id} className="hover:bg-muted/50">
-                            <TableCell className="cursor-pointer px-2 lg:px-8">
-                              {song.isPlaying === true ? (
-                                <PauseCircle
-                                  onClick={() => handlePlayPause()}
-                                  className="h-6 w-6"
-                                />
-                              ) : (
-                                <PlayCircle
-                                  onClick={() => onClickPlaySong(song)}
-                                  className="h-6 w-6"
-                                />
-                              )}
-                            </TableCell>
-
-                            <TableCell className="font-medium">
+                          <TableRow
+                            key={song.id}
+                            className={`hover:bg-muted/70 ${
+                              song.isPlaying === true ? "bg-muted" : ""
+                            }`}
+                            onClick={() => onClickPlaySong(song)}
+                          >
+                            <TableCell className="font-medium px-2 lg:px-8">
                               {song.title}
                             </TableCell>
                             {document.documentElement.clientWidth > 1024 ? (
@@ -769,6 +774,7 @@ export default function MusicPlayer({ hiddenLink }) {
                                     variant="ghost"
                                     size="icon"
                                     className="h-8 w-8"
+                                    onClick={(e) => e.stopPropagation()}
                                   >
                                     <MoreHorizontal className="h-4 w-4" />
                                     <span className="sr-only">

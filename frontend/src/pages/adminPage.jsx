@@ -177,10 +177,10 @@ const AdminPage = () => {
             </Button>
           </CardFooter>
         </Card>
-        <Button className="w-full mt-4" onClick={() => navigate("/dashboard")}>
-          Dashboard
-        </Button>
       </div>
+      <Button className="w-full mt-4" onClick={() => navigate("/dashboard")}>
+        Back to Dashboard
+      </Button>
     </div>
   );
 };
