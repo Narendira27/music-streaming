@@ -91,6 +91,12 @@ export default function MusicPlayer() {
   const [updateDetails, setUpdateDetails] = useState({ name: "", url: "" });
   const [deleteDetails, setDeleteDetails] = useState("");
 
+  // user search query
+  const [userSearchQuery, setUserSearchQuery] = useState("");
+
+  // show user songs
+  const [userResultSongs, setUserResultSongs] = useState([]);
+
   const [searchQuery, setSearchQuery] = useState("");
   const [searchSuggestions, setSearchSuggestions] = useState([]);
 
@@ -148,6 +154,7 @@ export default function MusicPlayer() {
           isPlaying: false,
         }));
         setSongs(UpdateArr);
+        setUserResultSongs(UpdateArr);
         setLoading(false);
         return `Your Songs has been loaded`;
       },
@@ -655,8 +662,32 @@ export default function MusicPlayer() {
 
         {/* Main Content - Liked Songs */}
         <div className="flex-1 overflow-hidden flex flex-col">
-          <div className="flex items-center justify-between px-4 pt-2 pb-6">
-            <h2 className="text-2xl font-bold ">Your Songs</h2>
+          <div className="flex items-center justify-between px-4 pt-4 pb-6">
+            <div className="flex flex-grow ">
+              <h2 className="text-2xl font-bold ">Your Songs</h2>
+              <div className="hidden md:flex justify-center flex-grow ">
+                <div className="flex items-center justify-center lg:w-2/4 md:w-3/4 border rounded-lg dark:bg-inherit ">
+                  <input
+                    className="w-full dark:bg-inherit outline-none  px-2.5 py-1"
+                    placeholder="Search your songs"
+                    type="search"
+                    value={userSearchQuery}
+                    onChange={(e) => {
+                      setUserSearchQuery(e.target.value.toLocaleLowerCase());
+                      const filteredData = songs.filter((each) =>
+                        each.title
+                          .toLowerCase()
+                          .includes(e.target.value.toLowerCase())
+                      );
+                      setUserResultSongs(filteredData);
+                    }}
+                  />
+                  <button className="bg-black text-white  dark:bg-white dark:text-black h-full  px-2.5 py-1 rounded-r-lg">
+                    <Search />
+                  </button>
+                </div>
+              </div>
+            </div>
             <div className="flex h-full items-center">
               <DropdownMenu>
                 <DropdownMenuTrigger>
@@ -726,14 +757,14 @@ export default function MusicPlayer() {
             </div>
           </div>
 
-          {songs.length > 0 && loading === false ? (
+          {userResultSongs.length > 0 && loading === false ? (
             <div className="flex-1 overflow-auto px-4">
               <div className="rounded-md border border-border  ">
                 <div className="">
                   <Table>
                     <TableHeader className="sticky top-0 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 ">
                       <TableRow>
-                        <TableHead className="w-2/6 px-2 lg:px-8">
+                        <TableHead className="w-2/4 lg:w-1/4  px-4 lg:px-8">
                           Title
                         </TableHead>
                         {document.documentElement.clientWidth > 1024 ? (
@@ -743,11 +774,11 @@ export default function MusicPlayer() {
                         ) : null}
 
                         <TableHead>Duration</TableHead>
-                        <TableHead className="w-[70px]"></TableHead>
+                        <TableHead className="w-[30px] lg:w-[70px] "></TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {[...songs].map((song) => {
+                      {userResultSongs.map((song) => {
                         return (
                           <TableRow
                             key={song.id}
@@ -756,7 +787,7 @@ export default function MusicPlayer() {
                             }`}
                             onClick={() => onClickPlaySong(song)}
                           >
-                            <TableCell className="font-medium px-2 lg:px-8">
+                            <TableCell className="font-medium px-4 lg:px-8">
                               {song.title}
                             </TableCell>
                             {document.documentElement.clientWidth > 1024 ? (
@@ -814,8 +845,17 @@ export default function MusicPlayer() {
               </div>
             </div>
           ) : (
-            <div className="flex justify-center items-center ">
+            <div className="flex flex-col justify-center items-center h-2/3">
               <h1>No songs to show. Please add some songs</h1>
+              <Button
+                onClick={() => {
+                  setIsDialogOpen(true);
+                  setSearchQuery(userSearchQuery);
+                }}
+                className="mt-4"
+              >
+                Add songs
+              </Button>
             </div>
           )}
         </div>
