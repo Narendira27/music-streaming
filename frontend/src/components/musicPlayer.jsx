@@ -37,6 +37,7 @@ import {
   ListMusic,
   Search,
   AlignJustify,
+  CircleX,
 } from "lucide-react";
 
 import axios from "axios";
@@ -96,6 +97,9 @@ export default function MusicPlayer() {
 
   // show user songs
   const [userResultSongs, setUserResultSongs] = useState([]);
+
+  // show hide search in mobile view
+  const [showSearchMobile, setShowSearchMobile] = useState(false);
 
   const [searchQuery, setSearchQuery] = useState("");
   const [searchSuggestions, setSearchSuggestions] = useState([]);
@@ -432,21 +436,21 @@ export default function MusicPlayer() {
     return array;
   };
 
-  const handlePlayListPlay = () => {
-    if (shuffleStatus) {
-      const duplicateSong = [...songs];
-      const shuffledArray = shuffle(duplicateSong);
-      setPlayingQueue(shuffledArray);
-      setCurrentSong(shuffledArray[0]);
-      setIsPlaying(true);
-      toast.info("Playing Added Songs | Shuffle Enabled");
-    } else {
-      setPlayingQueue(songs);
-      setCurrentSong(songs[0]);
-      setIsPlaying(true);
-      toast.info("Playing Added Songs | Shuffle Disabled");
-    }
-  };
+  // const handlePlayListPlay = () => {
+  //   if (shuffleStatus) {
+  //     const duplicateSong = [...songs];
+  //     const shuffledArray = shuffle(duplicateSong);
+  //     setPlayingQueue(shuffledArray);
+  //     setCurrentSong(shuffledArray[0]);
+  //     setIsPlaying(true);
+  //     toast.info("Playing Added Songs | Shuffle Enabled");
+  //   } else {
+  //     setPlayingQueue(songs);
+  //     setCurrentSong(songs[0]);
+  //     setIsPlaying(true);
+  //     toast.info("Playing Added Songs | Shuffle Disabled");
+  //   }
+  // };
 
   const handleReShuffle = () => {
     const duplicateSong = [...songs];
@@ -663,79 +667,91 @@ export default function MusicPlayer() {
         {/* Main Content - Liked Songs */}
         <div className="flex-1 overflow-hidden flex flex-col">
           <div className="flex items-center justify-between px-4 pt-4 pb-6">
-            <div className="flex flex-grow ">
-              <h2 className="text-2xl font-bold ">Your Songs</h2>
-              <div className="hidden md:flex justify-center flex-grow ">
-                <div className="flex items-center justify-center lg:w-2/4 md:w-3/4 border rounded-lg dark:bg-inherit ">
-                  <input
-                    className="w-full dark:bg-inherit outline-none  px-2.5 py-1"
-                    placeholder="Search your songs"
-                    type="search"
-                    value={userSearchQuery}
-                    onChange={(e) => {
-                      setUserSearchQuery(e.target.value.toLocaleLowerCase());
-                      const filteredData = songs.filter((each) =>
-                        each.title
-                          .toLowerCase()
-                          .includes(e.target.value.toLowerCase())
-                      );
-                      setUserResultSongs(filteredData);
+            {showSearchMobile === false ? (
+              <>
+                <div className="flex flex-grow ">
+                  <h2 className="text-2xl font-bold ">Your Songs</h2>
+                  <div className="hidden md:flex justify-center flex-grow ">
+                    <div className="flex items-center justify-center lg:w-2/4 md:w-3/4 border rounded-lg dark:bg-inherit ">
+                      <input
+                        className="w-full dark:bg-inherit outline-none  px-2.5 py-1"
+                        placeholder="Search your songs"
+                        type="search"
+                        value={userSearchQuery}
+                        onChange={(e) => {
+                          setUserSearchQuery(
+                            e.target.value.toLocaleLowerCase()
+                          );
+                          const filteredData = songs.filter((each) =>
+                            each.title
+                              .toLowerCase()
+                              .includes(e.target.value.toLowerCase())
+                          );
+                          setUserResultSongs(filteredData);
+                        }}
+                      />
+                      <button className="bg-black text-white  dark:bg-white dark:text-black h-full  px-2.5 py-1 rounded-r-lg">
+                        <Search />
+                      </button>
+                    </div>
+                  </div>
+                </div>
+                <div className="flex h-full items-center ">
+                  <button
+                    onClick={() => {
+                      setShowSearchMobile(true);
                     }}
-                  />
-                  <button className="bg-black text-white  dark:bg-white dark:text-black h-full  px-2.5 py-1 rounded-r-lg">
+                    className="mx-4 md:hidden"
+                  >
                     <Search />
                   </button>
-                </div>
-              </div>
-            </div>
-            <div className="flex h-full items-center">
-              <DropdownMenu>
-                <DropdownMenuTrigger>
-                  <ListMusic />
-                </DropdownMenuTrigger>
-                <DropdownMenuContent>
-                  <div className="rounded-lg  p-4">
-                    <h1 className="text-xl mb-1 font-bold ">Queue</h1>
-                    {playingQueue.length > 0 ? (
-                      <p className="text-md  mt-4 mb-4">
-                        <span className="font-bold mr-2">
-                          {" "}
-                          Currently Playing :
-                        </span>
-                        {"  "}
-                        {currentSong.title}{" "}
-                      </p>
-                    ) : null}
-                    {playingQueue.length > 1 ? (
-                      <p className="text-md text-center mb-1 ">
-                        Next Song in your playlist{" "}
-                      </p>
-                    ) : (
-                      <p className="text-md text-center mb-2 mt-2 ">
-                        Play / Add songs to Queue{" "}
-                      </p>
-                    )}
-                    <DndContext
-                      autoScroll={true}
-                      sensors={sensors}
-                      onDragEnd={handleDragEnd}
-                      collisionDetection={closestCorners}
-                    >
-                      <ManageQueue
-                        playingQueue={playingQueue}
-                        currentSongIndex={currentSongIndex}
-                      />
-                    </DndContext>
-                    {playingQueue.length > 1 ? (
-                      <p className="text-xs text-center mt-2 ">
-                        Swipe Left/Right to remove Song from Queue{" "}
-                      </p>
-                    ) : null}
-                  </div>
-                </DropdownMenuContent>
-              </DropdownMenu>
+                  <DropdownMenu>
+                    <DropdownMenuTrigger>
+                      <ListMusic />
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent>
+                      <div className="rounded-lg  p-4">
+                        <h1 className="text-xl mb-1 font-bold ">Queue</h1>
+                        {playingQueue.length > 0 ? (
+                          <p className="text-md  mt-4 mb-4">
+                            <span className="font-bold mr-2">
+                              {" "}
+                              Currently Playing :
+                            </span>
+                            {"  "}
+                            {currentSong.title}{" "}
+                          </p>
+                        ) : null}
+                        {playingQueue.length > 1 ? (
+                          <p className="text-md text-center mb-1 ">
+                            Next Song in your playlist{" "}
+                          </p>
+                        ) : (
+                          <p className="text-md text-center mb-2 mt-2 ">
+                            Play / Add songs to Queue{" "}
+                          </p>
+                        )}
+                        <DndContext
+                          autoScroll={true}
+                          sensors={sensors}
+                          onDragEnd={handleDragEnd}
+                          collisionDetection={closestCorners}
+                        >
+                          <ManageQueue
+                            playingQueue={playingQueue}
+                            currentSongIndex={currentSongIndex}
+                          />
+                        </DndContext>
+                        {playingQueue.length > 1 ? (
+                          <p className="text-xs text-center mt-2 ">
+                            Swipe Left/Right to remove Song from Queue{" "}
+                          </p>
+                        ) : null}
+                      </div>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
 
-              <button
+                  {/* <button
                 onClick={handleShuffle}
                 className={`mx-2 rounded-full  flex justify-center p-0.5 w-10 ${
                   shuffleStatus === true
@@ -744,17 +760,45 @@ export default function MusicPlayer() {
                 } `}
               >
                 <Shuffle className="h-8 w-6" />
-              </button>
+              </button> */}
 
-              {isPlaying === true ? (
+                  {/* {isPlaying === true ? (
                 <PauseCircle className="cursor-pointer h-8 w-10" />
               ) : (
                 <PlayCircle
                   onClick={handlePlayListPlay}
                   className="cursor-pointer h-8 w-10"
                 />
-              )}
-            </div>
+              )} */}
+                </div>
+              </>
+            ) : (
+              <div className="flex items-center justify-center md:hidden w-full  dark:bg-inherit ">
+                <input
+                  className="w-full dark:bg-inherit outline-none  px-2.5 py-1 border rounded-lg"
+                  placeholder="Search your songs"
+                  type="search"
+                  value={userSearchQuery}
+                  onChange={(e) => {
+                    setUserSearchQuery(e.target.value.toLocaleLowerCase());
+                    const filteredData = songs.filter((each) =>
+                      each.title
+                        .toLowerCase()
+                        .includes(e.target.value.toLowerCase())
+                    );
+                    setUserResultSongs(filteredData);
+                  }}
+                />
+                <button
+                  onClick={() => {
+                    setShowSearchMobile(false);
+                  }}
+                  className=" text-black  dark:text-white h-full  px-2.5 py-1 rounded-r-lg"
+                >
+                  <CircleX />
+                </button>
+              </div>
+            )}
           </div>
 
           {userResultSongs.length > 0 && loading === false ? (
@@ -782,7 +826,7 @@ export default function MusicPlayer() {
                         return (
                           <TableRow
                             key={song.id}
-                            className={`hover:bg-muted/70 ${
+                            className={`hover:bg-muted/70 cursor-pointer ${
                               song.isPlaying === true ? "bg-muted" : ""
                             }`}
                             onClick={() => onClickPlaySong(song)}
