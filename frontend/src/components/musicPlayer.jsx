@@ -1416,7 +1416,11 @@ export default function MusicPlayer() {
                       >
                         <div className="flex items-center gap-4 px-2 py-2">
                           <Moon />
-                          <p>Set Sleep Timer</p>
+                          {sleepTimerInfo.status === false ? (
+                            <p>Set Sleep Timer</p>
+                          ) : (
+                            <p>Sleep in {sleepTimerInfo.sleepTime} min</p>
+                          )}
                         </div>
                       </DropdownMenuItem>
                     </DropdownMenuContent>
