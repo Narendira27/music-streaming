@@ -38,6 +38,7 @@ import {
   Search,
   AlignJustify,
   CircleX,
+  Moon,
 } from "lucide-react";
 
 import axios from "axios";
@@ -62,6 +63,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "./ui/tabs";
 
 import { ScrollArea } from "./ui/scroll-area";
 import { Checkbox } from "./ui/checkbox";
+import { RadioGroup, RadioGroupItem } from "./ui/radio-group";
+import { Label } from "./ui/label";
 
 export default function MusicPlayer() {
   const [isPlaying, setIsPlaying] = useState(false);
@@ -71,8 +74,6 @@ export default function MusicPlayer() {
   const [currentSong, setCurrentSong] = useState({});
 
   const [shuffleStatus, setShuffleStatus] = useState(false);
-  const [repeatStatus, setRepeatStatus] = useState(false);
-  const repeatStatusRef = useRef(repeatStatus);
 
   const [volume, setVolume] = useState([100]);
   const [progress, setProgress] = useState([0]);
@@ -84,6 +85,8 @@ export default function MusicPlayer() {
   const [addSongTab, setAddSongTab] = useState("search");
   const [isDialogOpenUpdate, setIsDialogOpenUpdate] = useState(false);
   const [isDialogOpenDelete, setIsDialogOpenDelete] = useState(false);
+  const [isRepeatDialogOpen, setIsRepeatDialogOpen] = useState(false);
+  const [isSleepTimerDialogOpen, setIsSleepTimerDialogOpen] = useState(false);
 
   const [newSong, setNewSong] = useState({ name: "", url: "" });
   const [songs, setSongs] = useState([]);
@@ -91,6 +94,25 @@ export default function MusicPlayer() {
   const [loading, setLoading] = useState(true);
   const [updateDetails, setUpdateDetails] = useState({ name: "", url: "" });
   const [deleteDetails, setDeleteDetails] = useState("");
+
+  // repeat status
+  const [repeatStatus, setRepeatStatus] = useState({
+    status: false,
+    times: 0,
+    custom: false,
+    value: "default",
+  });
+  const repeatStatusRef = useRef(repeatStatus);
+
+  //  sleep timer
+  const [sleepTimerInfo, setSleepTimerInfo] = useState({
+    status: false,
+    sleepTime: 0,
+    custom: false,
+    value: "default",
+  });
+
+  const [sleepTimerId, setSleepTimerId] = useState("");
 
   // user search query
   const [userSearchQuery, setUserSearchQuery] = useState("");
@@ -140,10 +162,6 @@ export default function MusicPlayer() {
       setSearchSuggestions([]);
     }
   }, [searchQuery]);
-
-  useEffect(() => {
-    repeatStatusRef.current = repeatStatus;
-  }, [repeatStatus]);
 
   const fetchSongs = () => {
     const authToken = Cookies.get("auth-cookie");
@@ -216,6 +234,10 @@ export default function MusicPlayer() {
     }
   }, [currentSongIndex, currentSong]);
 
+  useEffect(() => {
+    repeatStatusRef.current = repeatStatus; // Keep ref updated with the latest state
+  }, [repeatStatus]);
+
   //  handles the  playing songs
   useEffect(() => {
     if (audio !== null) audio.src = "";
@@ -279,10 +301,21 @@ export default function MusicPlayer() {
         });
 
         audio.onended = () => {
-          if (repeatStatusRef.current) {
+          const currentRepeatStatus = repeatStatusRef.current;
+          if (currentRepeatStatus.times > 0) {
+            setRepeatStatus((prev) => {
+              if (prev.times > 1) {
+                toast.info(
+                  `Repeating song, remaining: ${prev.times - 1} times`
+                );
+                return { ...prev, times: prev.times - 1 };
+              } else {
+                toast.info("Last repeat, moving to next song");
+                return { ...prev, status: false, times: 0, custom: false };
+              }
+            });
             audio.currentTime = 0;
             audio.play();
-            setRepeatStatus(false);
           } else {
             const updatePlayingIndex = currentSongIndex + 1;
             setCurrentSongIndex(updatePlayingIndex);
@@ -461,13 +494,32 @@ export default function MusicPlayer() {
     toast.info("Shuffled, Playing Now ....");
   };
 
-  const handleRepeat = () => {
-    setRepeatStatus((prev) => !prev);
-    if (repeatStatus) {
-      toast.info("Repeat Disabled");
-    } else {
-      toast.info("Repeat Enabled");
+  const handleSleepTimer = () => {
+    const clearTimeoutFunction = () => {
+      clearTimeout(sleepTimerId);
+      toast.info("Stopped Sleep Timer");
+    };
+    if (sleepTimerInfo.status !== false) {
+      if (sleepTimerId) {
+        clearTimeoutFunction();
+      }
+      const timeoutId = setTimeout(() => {
+        setSleepTimerId("");
+        setSleepTimerInfo({
+          status: false,
+          sleepTime: 0,
+          custom: false,
+          value: "default",
+        });
+        togglePause();
+      }, sleepTimerInfo.sleepTime * 60000);
+      toast.info("Sleep Timer Enabled " + sleepTimerInfo.sleepTime + " min");
+      setSleepTimerId(timeoutId);
+      setIsSleepTimerDialogOpen(false);
+      return;
     }
+    clearTimeoutFunction();
+    setIsSleepTimerDialogOpen(false);
   };
 
   const handleNext = () => {
@@ -1057,6 +1109,7 @@ export default function MusicPlayer() {
           </DialogContent>
         </Dialog>
 
+        {/* Update song title */}
         <Dialog open={isDialogOpenUpdate} onOpenChange={setIsDialogOpenUpdate}>
           <DialogContent className="sm:max-w-[425px]">
             <DialogHeader>
@@ -1092,6 +1145,7 @@ export default function MusicPlayer() {
           </DialogContent>
         </Dialog>
 
+        {/* delete song */}
         <Dialog open={isDialogOpenDelete} onOpenChange={setIsDialogOpenDelete}>
           <DialogContent className="sm:max-w-[425px]">
             <DialogHeader>
@@ -1107,6 +1161,174 @@ export default function MusicPlayer() {
                 Close
               </Button>
               <Button onClick={handleDeleteSong}>Delete</Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
+        <Dialog open={isRepeatDialogOpen} onOpenChange={setIsRepeatDialogOpen}>
+          <DialogContent className="sm:max-w-[425px]">
+            <DialogHeader>
+              <DialogTitle className="flex justify-between items-center text-foreground">
+                Repeat Options
+              </DialogTitle>
+            </DialogHeader>
+            <div className="grid gap-4 py-4">
+              <RadioGroup
+                onValueChange={(e) => {
+                  if (e === "custom") {
+                    setRepeatStatus((prev) => ({
+                      ...prev,
+                      custom: true,
+                      value: e,
+                    }));
+                    return;
+                  }
+                  if (e == "default") {
+                    setRepeatStatus((prev) => ({
+                      ...prev,
+                      status: false,
+                      times: 0,
+                      custom: false,
+                      value: e,
+                    }));
+                    setIsRepeatDialogOpen(false);
+                    return;
+                  }
+                  setRepeatStatus((prev) => ({
+                    ...prev,
+                    status: true,
+                    times: parseInt(e),
+                    custom: false,
+                    value: e,
+                  }));
+                  setIsRepeatDialogOpen(false);
+                }}
+                defaultValue={repeatStatus.value}
+              >
+                <div className="flex items-center space-x-2 my-2">
+                  <RadioGroupItem value="default" id="r1" />
+                  <Label htmlFor="r1">Off</Label>
+                </div>
+                <div className="flex items-center space-x-2 my-2">
+                  <RadioGroupItem value="1" id="r2" />
+                  <Label htmlFor="r2">Repeat once</Label>
+                </div>
+                <div className="flex items-center space-x-2 my-2">
+                  <RadioGroupItem value="2" id="r3" />
+                  <Label htmlFor="r3">Repeat twice</Label>
+                </div>
+                <div className="flex items-center space-x-2 my-2">
+                  <RadioGroupItem value="custom" id="r4" />
+                  <Label htmlFor="r4">Custom</Label>
+                </div>
+                {repeatStatus.custom ? (
+                  <div className="my-2">
+                    <Input
+                      value={repeatStatus.times}
+                      onChange={(e) => {
+                        setRepeatStatus((prev) => ({
+                          ...prev,
+                          status: true,
+                          times: parseInt(e.target.value),
+                        }));
+                      }}
+                      type="number"
+                    />
+                  </div>
+                ) : null}
+              </RadioGroup>
+            </div>
+          </DialogContent>
+        </Dialog>
+
+        <Dialog
+          open={isSleepTimerDialogOpen}
+          onOpenChange={setIsSleepTimerDialogOpen}
+        >
+          <DialogContent className="sm:max-w-[425px]">
+            <DialogHeader>
+              <DialogTitle className="flex justify-between items-center text-foreground">
+                Set Sleep Timer
+              </DialogTitle>
+            </DialogHeader>
+            <div className="grid gap-4 py-4">
+              <RadioGroup
+                onValueChange={(e) => {
+                  if (e === "custom") {
+                    setSleepTimerInfo((prev) => ({
+                      ...prev,
+                      custom: true,
+                      status: true,
+                      value: e,
+                    }));
+                    return;
+                  }
+                  if (e == "default") {
+                    setSleepTimerInfo((prev) => ({
+                      ...prev,
+                      status: false,
+                      sleepTime: 0,
+                      custom: false,
+                      value: e,
+                    }));
+                    return;
+                  }
+                  setSleepTimerInfo((prev) => ({
+                    ...prev,
+                    status: true,
+                    sleepTime: parseInt(e),
+                    custom: false,
+                    value: e,
+                  }));
+                }}
+                defaultValue={sleepTimerInfo.value}
+              >
+                <div className="flex items-center space-x-2 my-2">
+                  <RadioGroupItem value="default" id="r1" />
+                  <Label htmlFor="r1">Off</Label>
+                </div>
+                <div className="flex items-center space-x-2 my-2">
+                  <RadioGroupItem value="15" id="r2" />
+                  <Label htmlFor="r2">15 minutes</Label>
+                </div>
+                <div className="flex items-center space-x-2 my-2">
+                  <RadioGroupItem value="30" id="r3" />
+                  <Label htmlFor="r3">30 minutes</Label>
+                </div>
+                <div className="flex items-center space-x-2 my-2">
+                  <RadioGroupItem value="60" id="r4" />
+                  <Label htmlFor="r4">1 hour</Label>
+                </div>
+                <div className="flex items-center space-x-2 my-2">
+                  <RadioGroupItem value="custom" id="r5" />
+                  <Label htmlFor="r5">Custom (in minutes)</Label>
+                </div>
+
+                {sleepTimerInfo.custom ? (
+                  <div>
+                    <Input
+                      value={sleepTimerInfo.sleepTime}
+                      onChange={(e) => {
+                        setSleepTimerInfo((prev) => ({
+                          ...prev,
+                          status: true,
+                          sleepTime: parseInt(e.target.value),
+                        }));
+                      }}
+                      type="number"
+                    />
+                  </div>
+                ) : null}
+              </RadioGroup>
+            </div>
+            <DialogFooter className="flex justify-between">
+              <Button
+                onClick={() => {
+                  handleSleepTimer();
+                }}
+              >
+                Save
+              </Button>
             </DialogFooter>
           </DialogContent>
         </Dialog>
@@ -1164,18 +1386,41 @@ export default function MusicPlayer() {
                   >
                     <SkipForward className="h-4 w-4" />
                   </Button>
-                  <Button
-                    onClick={handleRepeat}
-                    variant="ghost"
-                    size="icon"
-                    className={
-                      repeatStatus === true
-                        ? "dark:bg-white dark:text-black bg-black text-white h-8 w-8"
-                        : "h-8 w-8"
-                    }
-                  >
-                    <Repeat className="h-4 w-4" />
-                  </Button>
+
+                  <DropdownMenu modal={false}>
+                    <DropdownMenuTrigger asChild>
+                      <Button variant="ghost" size="icon" className=" h-8 w-8">
+                        <MoreHorizontal />
+                        <span className="sr-only">More options</span>
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end">
+                      <DropdownMenuItem
+                        onClick={() => {
+                          setIsRepeatDialogOpen(true);
+                        }}
+                      >
+                        <div className="flex items-center gap-4 cursor-pointer px-2 py-2">
+                          <Repeat />
+                          {repeatStatus.status === false ? (
+                            <p>No Repeat</p>
+                          ) : (
+                            <p>Repeat {repeatStatus.times} times</p>
+                          )}
+                        </div>
+                      </DropdownMenuItem>
+                      <DropdownMenuItem
+                        onClick={() => {
+                          setIsSleepTimerDialogOpen(true);
+                        }}
+                      >
+                        <div className="flex items-center gap-4 px-2 py-2">
+                          <Moon />
+                          <p>Set Sleep Timer</p>
+                        </div>
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
                 </div>
                 <div className="flex items-center gap-2 w-full">
                   <span className="text-sm text-muted-foreground w-12 text-right">
@@ -1205,6 +1450,7 @@ export default function MusicPlayer() {
                   className="w-24"
                 />
               </div>
+              <div className="flex items-center "></div>
             </div>
           </div>
         </div>
