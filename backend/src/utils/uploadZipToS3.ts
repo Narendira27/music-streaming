@@ -16,6 +16,7 @@ if (!keyId || !applicationKey || !bucketName) {
 }
 
 const s3Client = new S3Client({
+  region: "us-east-005",
   endpoint: "https://s3.us-east-005.backblazeb2.com",
   credentials: {
     accessKeyId: keyId,
