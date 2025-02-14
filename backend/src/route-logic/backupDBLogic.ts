@@ -2,7 +2,7 @@ import path from "path";
 import GenerateZipFileName from "../utils/generateZipFileName";
 import createZipFile from "../utils/createZipFile";
 import uploadFileToS3 from "../utils/uploadZipToS3";
-import fs from "fx";
+import fs from "fs";
 
 const DbBackupLogic = (): Promise<void> => {
   return new Promise(async (resolve, reject) => {
