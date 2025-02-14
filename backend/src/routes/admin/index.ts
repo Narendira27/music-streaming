@@ -7,6 +7,7 @@ import downloadYoutubeAudio from "../../utils/downloadAudioV1";
 import validateSchema from "../../utils/validateSchema";
 import { updateYoutubeUrlSchema } from "../../schemas/updateYtUrlSchema";
 import { serviceEmail } from "../../utils/emailUtils";
+import DbBackupLogic from "../../route-logic/backupDBLogic";
 
 const prisma = new PrismaClient();
 
@@ -64,6 +65,15 @@ adminRoutes.get("/checkDownloadStatus", async (req, res) => {
   }
   fs.unlinkSync(filePath);
   res.json({ msg: "working fine !" });
+});
+
+adminRoutes.get("/backupData", async (req, res) => {
+  try {
+    await DbBackupLogic();
+    res.status(200).json({ msg: "Backup Successful" });
+  } catch (e: any) {
+    res.send({ msg: e.message });
+  }
 });
 
 export default adminRoutes;
