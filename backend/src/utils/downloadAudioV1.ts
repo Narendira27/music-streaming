@@ -1,13 +1,12 @@
 import axios from "axios";
 import fs from "fs";
 import ffmpeg from "fluent-ffmpeg";
-import FormData from "form-data";
 import { PrismaClient } from "@prisma/client";
-import qs from "qs"
+import qs from "qs";
 
 const prisma = new PrismaClient();
 
-const getDbURL = async ()=> {
+const getDbURL = async () => {
   try {
     const res = await prisma.ytUrl.findFirst({ where: { id: "1" } });
     if (res === undefined || res === null) {
@@ -33,72 +32,71 @@ function getAudioDuration(filePath: string): Promise<number> {
   });
 }
 
-const getKey =  async () => {
-  
+const getKey = async () => {
   let config = {
-    method: 'get',
-    maxBodyLength: Infinity, 
-    url: 'https://api.mp3youtube.cc/v2/sanity/key',
-    headers: { 
-      'accept': '*/*', 
-      'accept-language': 'en-US,en;q=0.9', 
-      'content-type': 'application/json', 
-      'if-none-match': 'W/"7e-KvPCs739rtXJfVSWGh9Q6jNmq7E-gzip"', 
-      'origin': 'https://iframe.y2meta-uk.com', 
-      'priority': 'u=1, i', 
-      'referer': 'https://iframe.y2meta-uk.com/', 
-      'sec-ch-ua': '"Brave";v="131", "Chromium";v="131", "Not_A Brand";v="24"', 
-      'sec-ch-ua-mobile': '?0', 
-      'sec-ch-ua-platform': '"Linux"', 
-      'sec-fetch-dest': 'empty', 
-      'sec-fetch-mode': 'cors', 
-      'sec-fetch-site': 'cross-site', 
-      'sec-gpc': '1', 
-      'user-agent': 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36'
-    }
+    method: "get",
+    maxBodyLength: Infinity,
+    url: "https://api.mp3youtube.cc/v2/sanity/key",
+    headers: {
+      accept: "*/*",
+      "accept-language": "en-US,en;q=0.9",
+      "content-type": "application/json",
+      "if-none-match": 'W/"7e-KvPCs739rtXJfVSWGh9Q6jNmq7E-gzip"',
+      origin: "https://iframe.y2meta-uk.com",
+      priority: "u=1, i",
+      referer: "https://iframe.y2meta-uk.com/",
+      "sec-ch-ua": '"Brave";v="131", "Chromium";v="131", "Not_A Brand";v="24"',
+      "sec-ch-ua-mobile": "?0",
+      "sec-ch-ua-platform": '"Linux"',
+      "sec-fetch-dest": "empty",
+      "sec-fetch-mode": "cors",
+      "sec-fetch-site": "cross-site",
+      "sec-gpc": "1",
+      "user-agent":
+        "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36",
+    },
   };
-  try{
-    const response = await axios.request(config)
-    const parsedValue = JSON.parse(JSON.stringify(response.data)) 
-    return parsedValue.key
+  try {
+    const response = await axios.request(config);
+    const parsedValue = JSON.parse(JSON.stringify(response.data));
+    return parsedValue.key;
+  } catch (e) {
+    throw new Error("Error while Fetching Key");
   }
-  catch(e){
-    throw new Error ("Error while Fetching Key")
-  }
+};
 
-}
-
-const getDownloadURL = async (dbYtURL: string, link: string,key:string) => {
+const getDownloadURL = async (dbYtURL: string, link: string, key: string) => {
   let data = qs.stringify({
-    'link': link,
-    'format': 'mp3',
-    'audioBitrate': '320',
-    'videoQuality': '720',
-    'vCodec': 'h264' 
+    link: link,
+    format: "mp3",
+    audioBitrate: "320",
+    videoQuality: "720",
+    vCodec: "h264",
   });
 
   let config = {
-    method: 'post',
+    method: "post",
     maxBodyLength: Infinity,
     url: dbYtURL,
-    headers: { 
-      'accept': '*/*', 
-      'accept-language': 'en-US,en;q=0.9', 
-      'content-type': 'application/x-www-form-urlencoded', 
-      'key': key, 
-      'origin': 'https://iframe.y2meta-uk.com', 
-      'priority': 'u=1, i', 
-      'referer': 'https://iframe.y2meta-uk.com/', 
-      'sec-ch-ua': '"Brave";v="131", "Chromium";v="131", "Not_A Brand";v="24"', 
-      'sec-ch-ua-mobile': '?0', 
-      'sec-ch-ua-platform': '"Linux"', 
-      'sec-fetch-dest': 'empty', 
-      'sec-fetch-mode': 'cors', 
-      'sec-fetch-site': 'cross-site', 
-      'sec-gpc': '1', 
-      'user-agent': 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36'
+    headers: {
+      accept: "*/*",
+      "accept-language": "en-US,en;q=0.9",
+      "content-type": "application/x-www-form-urlencoded",
+      key: key,
+      origin: "https://iframe.y2meta-uk.com",
+      priority: "u=1, i",
+      referer: "https://iframe.y2meta-uk.com/",
+      "sec-ch-ua": '"Brave";v="131", "Chromium";v="131", "Not_A Brand";v="24"',
+      "sec-ch-ua-mobile": "?0",
+      "sec-ch-ua-platform": '"Linux"',
+      "sec-fetch-dest": "empty",
+      "sec-fetch-mode": "cors",
+      "sec-fetch-site": "cross-site",
+      "sec-gpc": "1",
+      "user-agent":
+        "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36",
     },
-    data : data
+    data: data,
   };
 
   try {
@@ -110,15 +108,12 @@ const getDownloadURL = async (dbYtURL: string, link: string,key:string) => {
   }
 };
 
-function downloadAudioFile(
-  url: string,
-  filePath: string
-): Promise<string> {
+function downloadAudioFile(url: string, filePath: string): Promise<string> {
   return new Promise((resolve, reject) => {
     const config = {
       method: "get",
       maxBodyLength: Infinity,
-      url: url, 
+      url: url,
       headers: {
         accept:
           "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8",
@@ -167,37 +162,11 @@ function downloadAudioFile(
 
 const downloadYoutubeAudio = async (link: string, filepath: string) => {
   try {
-    const dbYtURL = await getDbURL();
-    const key = await getKey()
-
-    if (key === undefined   ||  null) {
-      throw new Error("Key is undefined");
+    const downloadUrl = await ytDownloadURL(link);
+    if (downloadUrl.success === false) {
+      throw new Error("Cannot Fetch the download Link");
     }
-    let downloadUrl = await getDownloadURL(dbYtURL,link,key);
-    if (downloadUrl === undefined) {
-      let RETRY_COUNT = 0;
-      const MAX_RETRY = 5;
-      while (RETRY_COUNT < MAX_RETRY && downloadUrl === undefined) {
-        RETRY_COUNT++;
-        console.log(`Retrying... Attempt ${RETRY_COUNT}`);
-
-        await new Promise((resolve) => setTimeout(resolve, 200));
-
-        downloadUrl = await getDownloadURL(dbYtURL,link,key);
-
-        if (downloadUrl !== undefined) {
-          console.log("Download URL retrieved successfully");
-          break;
-        }
-
-        if (RETRY_COUNT === MAX_RETRY) {
-          throw new Error(
-            "Max retries reached. Could not retrieve the download URL."
-          );
-        }
-      }
-    }
-    await downloadAudioFile(downloadUrl, filepath);
+    await downloadAudioFile(downloadUrl.link, filepath);
     const duration = await getAudioDuration(filepath);
     return {
       success: true,
@@ -215,15 +184,57 @@ const downloadYoutubeAudio = async (link: string, filepath: string) => {
   }
 };
 
+const ytDownloadURL = async (link: string) => {
+  try {
+    const dbYtURL = await getDbURL();
+    const key = await getKey();
+
+    if (key === undefined || null) {
+      throw new Error("Key is undefined");
+    }
+    let downloadUrl = await getDownloadURL(dbYtURL, link, key);
+    if (downloadUrl === undefined) {
+      let RETRY_COUNT = 0;
+      const MAX_RETRY = 5;
+      while (RETRY_COUNT < MAX_RETRY && downloadUrl === undefined) {
+        RETRY_COUNT++;
+        console.log(`Retrying... Attempt ${RETRY_COUNT}`);
+
+        await new Promise((resolve) => setTimeout(resolve, 200));
+
+        downloadUrl = await getDownloadURL(dbYtURL, link, key);
+
+        if (downloadUrl !== undefined) {
+          console.log("Download URL retrieved successfully");
+          break;
+        }
+
+        if (RETRY_COUNT === MAX_RETRY) {
+          throw new Error(
+            "Max retries reached. Could not retrieve the download URL."
+          );
+        }
+      }
+    }
+    return {
+      success: true,
+      link: downloadUrl,
+    };
+  } catch (error: any) {
+    if (error.message) {
+      console.error("Error occurred:", error.message);
+    }
+    console.error(error);
+    return {
+      success: false,
+      error: "Failed to get downloadLink",
+    };
+  }
+};
+
 export default downloadYoutubeAudio;
 
-export { getAudioDuration };
-
-
-
-
-
-
+export { getAudioDuration, ytDownloadURL };
 
 // function extractYouTubeID(url: string) {
 //   const regex =

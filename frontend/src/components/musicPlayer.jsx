@@ -386,34 +386,118 @@ export default function MusicPlayer() {
     toast.info("Playing");
   };
 
-  //  add song
-  const handleAddSong = async () => {
-    if (newSong.name.length > 2 && newSong.url) {
-      const authToken = Cookies.get("auth-cookie");
-      const responseAddSong = axios.post(
-        API_URL + "/user/song?type=youtube",
+  const handleSongYtLogic = async () => {
+    const authToken = Cookies.get("auth-cookie");
+    try {
+      const getDownloadInfo = await axios.get(
+        API_URL + "/user/yt-download-link?url=" + newSong.url,
         {
-          title: newSong.name,
-          youtubeUrl: newSong.url,
+          headers: { Authorization: "Bearer " + authToken },
+        }
+      );
+      const downloadInfo = getDownloadInfo.data;
+      if (downloadInfo.fileAvailable === true) {
+        const res = await addDbEntry(downloadInfo, authToken);
+        if (res === "error") {
+          throw new Error("error");
+        }
+      }
+      if (downloadInfo.fileAvailable === false) {
+        const uploadedYtAudioDetails = await DownloadYtAudio(
+          downloadInfo.url,
+          authToken,
+          newSong.url
+        );
+        if (uploadedYtAudioDetails.success === false) throw new Error("Error");
+      }
+    } catch (e) {
+      console.log(e);
+      toast.error("Error : Something Went wrong");
+    }
+  };
+
+  async function DownloadYtAudio(url, authToken, sourceUrl) {
+    try {
+      const response = await fetch(url, {
+        method: "GET",
+        headers: {
+          "User-Agent":
+            "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36",
+          Referer: "https://iframe.y2meta-uk.com/",
         },
+      });
+
+      if (!response.ok) throw new Error("Failed to fetch audio file");
+
+      const blob = await response.blob();
+
+      const formData = new FormData();
+
+      formData.append("file", blob, "audio.mp3"); // Append Blob as a file
+
+      const backendResponse = await axios.post(
+        API_URL + "/user/upload-yt-audio?url=" + sourceUrl,
+        formData,
         {
           headers: {
+            "Content-Type": "multipart/form-data",
             Authorization: "Bearer " + authToken,
           },
         }
       );
-      toast.promise(responseAddSong, {
-        loading: "AddingSong... This might take some time",
-        success: () => {
-          setNewSong({ name: "", url: "" });
-          fetchSongs();
-          return `Song has been added`;
+
+      const audioData = backendResponse.data;
+
+      const requestInfo = await addDbEntry(audioData, authToken);
+
+      if (requestInfo === "error") throw new Error("error");
+
+      return { success: true };
+
+      // const audioBlob = new Blob([blob], { type: "audio/mp3" });
+
+      // const blobUrl = URL.createObjectURL(audioBlob);
+
+      // console.log("Blob URL:", blobUrl);
+
+      // setTimeout(() => URL.revokeObjectURL(blobUrl), 600000);
+    } catch (error) {
+      console.error("Error:", error);
+      return { success: false };
+    }
+  }
+
+  const addDbEntry = async (downloadInfo, authToken) => {
+    try {
+      await axios.post(
+        API_URL + "/user/yt-song-add",
+        {
+          title: newSong.name,
+          url: newSong.url,
+          fileName: downloadInfo.fileName,
+          filePath: downloadInfo.filePath,
+          duration: String(downloadInfo.duration),
         },
-        error: (res) => {
-          return `Error : ${res.response.data.msg}`;
-        },
-      });
+        {
+          headers: { Authorization: "Bearer " + authToken },
+        }
+      );
+      setNewSong({ name: "", url: "" });
+      fetchSongs();
+      toast.success("Song Added Successfully");
+      return "success";
+    } catch (e) {
+      console.log(e);
+      return "error";
+    }
+  };
+
+  //  add song
+  const handleAddSong = async () => {
+    if (newSong.name.length > 2 && newSong.url) {
+      toast.info("AddingSong... This might take some time");
       if (dialogPreference === true) setIsDialogOpen(false);
+      await handleSongYtLogic();
     }
   };
 
