@@ -56,6 +56,7 @@ const AddSongLogic = (body: any, type: string): Promise<responseType> => {
       }
 
       fileName = generateFileName(String(body.id));
+      console.log(fileName)
       filePath = path.join(DOWNLOAD_DIR, fileName);
     }
 
